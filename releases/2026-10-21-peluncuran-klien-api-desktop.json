@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-21",
+  "type": "feature",
+  "project": {
+    "name": "Luluax Request"
+  },
+  "title": {
+    "id": "Peluncuran Aplikasi Pengujian API dan Sinkronisasi Cloud",
+    "en": "Launch of API Testing Client and Cloud Sync Application"
+  },
+  "body": {
+    "id": "Aplikasi pengujian API kini resmi hadir dengan antarmuka modern, dukungan aplikasi desktop portabel, dan sinkronisasi data cloud untuk memudahkan pengujian layanan antarperangkat.",
+    "en": "The API testing client is now officially launched featuring a modern interface, portable desktop support, and cloud synchronization for seamless multi-device testing."
+  },
+  "items": [
+    {
+      "type": "new",
+      "id": "Antarmuka Pengujian API Modern: Desain bersih dan responsif untuk mengirim berbagai metode permintaan dan memeriksa respons secara langsung.",
+      "en": "Modern API Testing Interface: Clean and responsive design to execute diverse request methods and inspect responses instantly."
+    },
+    {
+      "type": "new",
+      "id": "Pengelolaan Koleksi & Lingkungan: Simpan permintaan ke dalam grup koleksi serta atur variabel lingkungan dengan praktis.",
+      "en": "Collection & Environment Management: Organize requests into collection groups and manage environment variables conveniently."
+    },
+    {
+      "type": "new",
+      "id": "Sinkronisasi Cloud Terpadu: Sinkronkan seluruh riwayat, koleksi, dan pengaturan ke cloud dengan satu kunci sinkronisasi.",
+      "en": "Unified Cloud Synchronization: Synchronize all history, collections, and preferences to the cloud with a single sync key."
+    },
+    {
+      "type": "new",
+      "id": "Dukungan Aplikasi Desktop Portabel: Tersedia sebagai aplikasi desktop mandiri yang ringan tanpa instalasi rumit.",
+      "en": "Portable Desktop Application Support: Available as a standalone lightweight desktop app without complex setup."
+    }
+  ]
+}

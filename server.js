@@ -8,10 +8,46 @@ const os = require('os');
 const PORT = process.env.PORT || 3990;
 const app = express();
 
-const DATA_DIR = path.join(__dirname, 'data');
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+function getWritableDataDir(appName, defaultDataPath) {
+  const isInsideAsar = __dirname.includes('.asar');
+  let targetDir;
+  if (isInsideAsar) {
+    if (process.env.APPDATA) {
+      targetDir = path.join(process.env.APPDATA, appName);
+    } else if (process.platform === 'darwin') {
+      targetDir = path.join(os.homedir(), 'Library', 'Application Support', appName);
+    } else {
+      targetDir = path.join(os.homedir(), `.${appName.toLowerCase()}`);
+    }
+  } else {
+    targetDir = defaultDataPath;
+  }
+
+  if (!fs.existsSync(targetDir)) {
+    fs.mkdirSync(targetDir, { recursive: true });
+  }
+
+  // Copy initial seed files from defaultDataPath into writable dir if needed
+  if (fs.existsSync(defaultDataPath)) {
+    try {
+      const files = fs.readdirSync(defaultDataPath);
+      for (const file of files) {
+        const dest = path.join(targetDir, file);
+        if (!fs.existsSync(dest)) {
+          const src = path.join(defaultDataPath, file);
+          if (fs.statSync(src).isFile()) {
+            fs.copyFileSync(src, dest);
+          }
+        }
+      }
+    } catch (e) {
+      // ignore seed copy warnings
+    }
+  }
+  return targetDir;
 }
+
+const DATA_DIR = getWritableDataDir('LuluaX-Request', path.join(__dirname, 'data'));
 
 function readData(file, defaultVal = []) {
   const filePath = path.join(DATA_DIR, file);

@@ -2,11 +2,13 @@
   "name": "luluax-request",
   "version": "1.0.0",
   "description": "Modern API Client inspired by Requestly with Neon Cloud Sync for Windows & macOS",
-  "main": "server.js",
+  "main": "electron-main.js",
   "scripts": {
     "start": "node server.js",
     "app:win": "run.bat",
-    "app:mac": "bash run-macos.sh"
+    "app:mac": "bash run-macos.sh",
+    "build:win": "electron-builder --win --dir",
+    "build:win-exe": "electron-builder --win portable"
   },
   "keywords": [
     "luluax-request",
@@ -22,5 +24,23 @@
   "dependencies": {
     "dotenv": "^18.0.8",
     "express": "^4.21.2"
+  },
+  "build": {
+    "appId": "com.luluax.request",
+    "productName": "LuluaX-Request",
+    "npmRebuild": false,
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "portable",
+        "dir"
+      ]
+    }
+  },
+  "devDependencies": {
+    "electron": "^44.9.2",
+    "electron-builder": "^26.15.3"
   }
 }
