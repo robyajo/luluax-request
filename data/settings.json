@@ -1,0 +1,7 @@
+{
+  "cloudApiUrl": "https://www.luluax-service.duckdns.org",
+  "cloudSyncKey": "",
+  "timeoutMs": 30000,
+  "followRedirects": true,
+  "verifySsl": true
+}

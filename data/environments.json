@@ -1,0 +1,20 @@
+[
+  {
+    "id": "env_prod",
+    "name": "Production Cloud (LuluaX)",
+    "isDefault": true,
+    "variables": [
+      { "key": "backendUrl", "value": "https://www.luluax-service.duckdns.org", "enabled": true },
+      { "key": "apiKey", "value": "my-secret-key-2026", "enabled": true }
+    ]
+  },
+  {
+    "id": "env_local",
+    "name": "Local Development",
+    "isDefault": false,
+    "variables": [
+      { "key": "backendUrl", "value": "http://127.0.0.1:4000", "enabled": true },
+      { "key": "apiKey", "value": "local-dev-key", "enabled": true }
+    ]
+  }
+]

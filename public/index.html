@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LuluaX-Request — Modern API Client</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="theme-dark">
+  <div class="app-layout">
+    <!-- Left Navigation Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <span class="brand-title">LuluaX<span class="brand-cyan">Request</span></span>
+            <span class="brand-sub" id="sys-platform-badge">API Client • Desktop</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar Tabs -->
+      <div class="sidebar-nav-tabs">
+        <button class="side-tab active" data-tab="collections">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span>Collections</span>
+        </button>
+        <button class="side-tab" data-tab="history">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <span>History</span>
+        </button>
+      </div>
+
+      <!-- Collections Pane -->
+      <div class="sidebar-pane active" id="pane-collections">
+        <div class="pane-action-bar">
+          <input type="text" id="filter-collections" placeholder="Search collections..." class="sidebar-search">
+          <button class="btn-icon" id="btn-new-collection" title="New Collection">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="collections-tree" id="collections-tree">
+          <!-- Dynamic collection cards and requests -->
+        </div>
+      </div>
+
+      <!-- History Pane -->
+      <div class="sidebar-pane" id="pane-history">
+        <div class="pane-action-bar">
+          <span class="history-title">Recent Requests</span>
+          <button class="btn-text-sm" id="btn-clear-history">Clear</button>
+        </div>
+        <div class="history-list" id="history-list">
+          <!-- Dynamic history items -->
+        </div>
+      </div>
+
+      <!-- Sidebar Footer (Cloud & Status) -->
+      <div class="sidebar-footer">
+        <div class="cloud-indicator" id="sidebar-cloud-badge">
+          <div class="cloud-dot"></div>
+          <span class="cloud-label" id="sidebar-cloud-text">Neon Cloud Ready</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="main-workspace">
+      <!-- Top Workspace Header -->
+      <header class="top-nav">
+        <!-- Request Tabs Bar -->
+        <div class="request-tabs-bar" id="request-tabs-bar">
+          <!-- Dynamic request tabs -->
+        </div>
+
+        <div class="top-nav-right">
+          <!-- Environment Selector -->
+          <div class="env-selector-wrapper">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            </svg>
+            <select id="env-select" class="env-dropdown">
+              <option value="">No Environment</option>
+            </select>
+            <button class="btn-icon-sm" id="btn-manage-envs" title="Manage Environments">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Cloud Sync Modal Button -->
+          <button class="btn btn-secondary btn-sm" id="btn-open-cloud">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path>
+            </svg>
+            <span>Cloud Sync</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Request Editor Pane -->
+      <div class="request-builder-area">
+        <!-- URL Bar -->
+        <div class="url-bar">
+          <select id="req-method" class="method-select">
+            <option value="GET">GET</option>
+            <option value="POST">POST</option>
+            <option value="PUT">PUT</option>
+            <option value="DELETE">DELETE</option>
+            <option value="PATCH">PATCH</option>
+            <option value="HEAD">HEAD</option>
+            <option value="OPTIONS">OPTIONS</option>
+          </select>
+          <input type="text" id="req-url" class="url-input" placeholder="Enter request URL or {{variable}} (e.g. https://api.example.com/items)">
+          <button class="btn btn-primary" id="btn-send">
+            <span>Send</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+          </button>
+          <button class="btn btn-secondary" id="btn-save-request" title="Save Request">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            <span>Save</span>
+          </button>
+          <button class="btn btn-secondary" id="btn-code-gen" title="Generate Code Snippet">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="16 18 22 12 16 6"></polyline>
+              <polyline points="8 6 2 12 8 18"></polyline>
+            </svg>
+            <span>Code</span>
+          </button>
+        </div>
+
+        <!-- Request Config Tabs (Params, Headers, Body, Auth) -->
+        <div class="config-tabs-wrapper">
+          <div class="config-tabs">
+            <button class="config-tab active" data-tab="params">Params <span class="tab-count" id="count-params">0</span></button>
+            <button class="config-tab" data-tab="headers">Headers <span class="tab-count" id="count-headers">0</span></button>
+            <button class="config-tab" data-tab="body">Body <span class="tab-dot" id="dot-body"></span></button>
+            <button class="config-tab" data-tab="auth">Authorization</button>
+          </div>
+
+          <!-- Tab Content: Params -->
+          <div class="config-pane active" id="pane-params">
+            <div class="kv-table-wrapper">
+              <table class="kv-table" id="table-params">
+                <thead>
+                  <tr>
+                    <th width="36px"></th>
+                    <th>Key</th>
+                    <th>Value</th>
+                    <th>Description</th>
+                    <th width="40px"></th>
+                  </tr>
+                </thead>
+                <tbody id="params-tbody"></tbody>
+              </table>
+              <button class="btn-text-sm" id="btn-add-param">+ Add Parameter</button>
+            </div>
+          </div>
+
+          <!-- Tab Content: Headers -->
+          <div class="config-pane" id="pane-headers">
+            <div class="kv-table-wrapper">
+              <table class="kv-table" id="table-headers">
+                <thead>
+                  <tr>
+                    <th width="36px"></th>
+                    <th>Header</th>
+                    <th>Value</th>
+                    <th>Description</th>
+                    <th width="40px"></th>
+                  </tr>
+                </thead>
+                <tbody id="headers-tbody"></tbody>
+              </table>
+              <button class="btn-text-sm" id="btn-add-header">+ Add Header</button>
+            </div>
+          </div>
+
+          <!-- Tab Content: Body -->
+          <div class="config-pane" id="pane-body">
+            <div class="body-toolbar">
+              <div class="radio-options">
+                <label><input type="radio" name="bodyType" value="none" checked> None</label>
+                <label><input type="radio" name="bodyType" value="json"> JSON</label>
+                <label><input type="radio" name="bodyType" value="urlencoded"> URL-Encoded</label>
+                <label><input type="radio" name="bodyType" value="raw"> Raw Text</label>
+              </div>
+              <button class="btn-text-sm" id="btn-format-json">Format JSON</button>
+            </div>
+            <textarea id="body-content" class="body-editor" placeholder="Write JSON or request payload here..."></textarea>
+          </div>
+
+          <!-- Tab Content: Auth -->
+          <div class="config-pane" id="pane-auth">
+            <div class="auth-box">
+              <div class="form-row">
+                <label>Auth Type</label>
+                <select id="auth-type-select" class="form-select">
+                  <option value="none">No Auth</option>
+                  <option value="bearer">Bearer Token</option>
+                  <option value="basic">Basic Auth</option>
+                  <option value="apikey">API Key</option>
+                </select>
+              </div>
+
+              <div id="auth-bearer-group" class="auth-group" style="display:none">
+                <label>Token</label>
+                <input type="text" id="auth-bearer-token" class="form-input" placeholder="Enter Bearer Token or {{token}}">
+              </div>
+
+              <div id="auth-basic-group" class="auth-group" style="display:none">
+                <div class="form-row">
+                  <input type="text" id="auth-basic-user" class="form-input" placeholder="Username">
+                  <input type="password" id="auth-basic-pass" class="form-input" placeholder="Password">
+                </div>
+              </div>
+
+              <div id="auth-apikey-group" class="auth-group" style="display:none">
+                <div class="form-row">
+                  <input type="text" id="auth-apikey-key" class="form-input" placeholder="Key (e.g. X-API-Key)">
+                  <input type="text" id="auth-apikey-val" class="form-input" placeholder="Value">
+                  <select id="auth-apikey-where" class="form-select" style="width: 140px">
+                    <option value="header">Header</option>
+                    <option value="query">Query Param</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Split Resizer Bar -->
+      <div class="split-divider"></div>
+
+      <!-- Response Inspector Area -->
+      <div class="response-area">
+        <div class="response-header">
+          <div class="response-meta-left">
+            <span class="response-label">Response</span>
+            <div id="response-status-badge" class="badge-status status-empty">Waiting for request</div>
+            <div id="response-time-badge" class="meta-item">-- ms</div>
+            <div id="response-size-badge" class="meta-item">-- B</div>
+          </div>
+          <div class="response-meta-right">
+            <button class="btn-text-sm" id="btn-copy-response">Copy Response</button>
+          </div>
+        </div>
+
+        <div class="response-tabs">
+          <button class="res-tab active" data-res-tab="body">Body</button>
+          <button class="res-tab" data-res-tab="headers">Headers (<span id="res-headers-count">0</span>)</button>
+        </div>
+
+        <div class="response-content">
+          <div class="res-pane active" id="res-pane-body">
+            <pre id="response-viewer" class="response-pre">Hit "Send" to execute request.</pre>
+          </div>
+          <div class="res-pane" id="res-pane-headers">
+            <table class="res-headers-table" id="res-headers-table">
+              <thead>
+                <tr><th>Header</th><th>Value</th></tr>
+              </thead>
+              <tbody id="res-headers-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL: MANAGE ENVIRONMENTS -->
+  <div class="modal-backdrop" id="modal-envs">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>Manage Environments</h3>
+        <button class="modal-close" onclick="app.closeModal('modal-envs')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="envs-manager-layout">
+          <div class="envs-list" id="modal-envs-list"></div>
+          <div class="envs-editor" id="modal-envs-editor">
+            <div class="form-group">
+              <label>Environment Name</label>
+              <input type="text" id="env-edit-name" class="form-input">
+            </div>
+            <table class="kv-table" style="margin-top: 12px">
+              <thead>
+                <tr><th width="32px"></th><th>Variable</th><th>Initial Value</th><th width="36px"></th></tr>
+              </thead>
+              <tbody id="env-vars-tbody"></tbody>
+            </table>
+            <button class="btn-text-sm" id="btn-add-env-var">+ Add Variable</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-new-env">+ New Environment</button>
+        <button class="btn btn-primary" id="btn-save-envs">Save & Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CLOUD SYNC -->
+  <div class="modal-backdrop" id="modal-cloud">
+    <div class="modal-dialog" style="max-width: 540px">
+      <div class="modal-header">
+        <h3>Cloud Sync (Hono + Neon Postgres)</h3>
+        <button class="modal-close" onclick="app.closeModal('modal-cloud')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="section-desc">Connect this LuluaX-Request client to your Hono + Neon Postgres backend (or Vercel) to synchronize your API collections, environments, and requests.</p>
+        <div class="form-group">
+          <label>LuluaX Backend URL</label>
+          <input type="text" id="cloud-backend-url" class="form-input" value="https://www.luluax-service.duckdns.org" placeholder="https://www.luluax-service.duckdns.org">
+        </div>
+        <div class="form-group">
+          <label>Sync Key / User ID</label>
+          <input type="text" id="cloud-sync-key" class="form-input" placeholder="e.g. roby-workspace-2026">
+        </div>
+        <div class="cloud-modal-actions">
+          <button class="btn btn-secondary" id="btn-cloud-push-modal">Push to Cloud</button>
+          <button class="btn btn-secondary" id="btn-cloud-pull-modal">Pull from Cloud</button>
+        </div>
+        <div id="cloud-modal-status" class="test-result" style="display:none; margin-top:14px"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="app.closeModal('modal-cloud')">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CODE GENERATOR -->
+  <div class="modal-backdrop" id="modal-code">
+    <div class="modal-dialog" style="max-width: 640px">
+      <div class="modal-header">
+        <h3>Generate Code Snippet</h3>
+        <button class="modal-close" onclick="app.closeModal('modal-code')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="code-gen-tabs">
+          <button class="code-tab active" data-lang="curl">cURL</button>
+          <button class="code-tab" data-lang="fetch">JavaScript (fetch)</button>
+          <button class="code-tab" data-lang="python">Python (requests)</button>
+          <button class="code-tab" data-lang="axios">Node.js (axios)</button>
+        </div>
+        <pre id="code-snippet-viewer" class="code-snippet-box"></pre>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-copy-code">Copy to Clipboard</button>
+        <button class="btn btn-primary" onclick="app.closeModal('modal-code')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

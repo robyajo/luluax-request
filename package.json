@@ -1,0 +1,26 @@
+{
+  "name": "luluax-request",
+  "version": "1.0.0",
+  "description": "Modern API Client inspired by Requestly with Neon Cloud Sync for Windows & macOS",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "app:win": "run.bat",
+    "app:mac": "bash run-macos.sh"
+  },
+  "keywords": [
+    "luluax-request",
+    "api-client",
+    "requestly",
+    "http-client",
+    "rest",
+    "neon",
+    "hono"
+  ],
+  "author": "LuluaX",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^18.0.8",
+    "express": "^4.21.2"
+  }
+}

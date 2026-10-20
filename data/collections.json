@@ -1,0 +1,52 @@
+[
+  {
+    "id": "col_sample_api",
+    "name": "Sample REST APIs",
+    "description": "Public test APIs for testing GET, POST, and JSON responses",
+    "createdAt": 1729440000000,
+    "items": [
+      {
+        "id": "req_get_posts",
+        "name": "Get Posts List",
+        "method": "GET",
+        "url": "https://jsonplaceholder.typicode.com/posts",
+        "headers": [
+          { "key": "Accept", "value": "application/json", "enabled": true }
+        ],
+        "params": [
+          { "key": "_limit", "value": "5", "enabled": true }
+        ],
+        "bodyType": "none",
+        "bodyContent": "",
+        "authType": "none",
+        "authConfig": {}
+      },
+      {
+        "id": "req_create_post",
+        "name": "Create New Post",
+        "method": "POST",
+        "url": "https://jsonplaceholder.typicode.com/posts",
+        "headers": [
+          { "key": "Content-Type", "value": "application/json", "enabled": true }
+        ],
+        "params": [],
+        "bodyType": "json",
+        "bodyContent": "{\n  \"title\": \"Testing LuluaX-Request\",\n  \"body\": \"API Client built with Hono and Neon backend\",\n  \"userId\": 1\n}",
+        "authType": "none",
+        "authConfig": {}
+      },
+      {
+        "id": "req_check_backend",
+        "name": "LuluaX Backend Health",
+        "method": "GET",
+        "url": "{{backendUrl}}/api/health",
+        "headers": [],
+        "params": [],
+        "bodyType": "none",
+        "bodyContent": "",
+        "authType": "none",
+        "authConfig": {}
+      }
+    ]
+  }
+]
