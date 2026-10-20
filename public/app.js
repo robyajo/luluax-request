@@ -1513,6 +1513,11 @@ class LuluaXRequestApp {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  escapeJs(str) {
+    if (!str) return '';
+    return String(str).replace(/'/g, "\\'").replace(/"/g, '\\"');
+  }
+
   formatBytes(bytes) {
     if (bytes === 0) return '0 B';
     const k = 1024;
