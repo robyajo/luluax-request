@@ -2,6 +2,11 @@ import { app, BrowserWindow, dialog, type MessageBoxReturnValue } from 'electron
 import { autoUpdater, type UpdateInfo, type ProgressInfo } from 'electron-updater';
 import * as path from 'path';
 
+// Start the local proxy backend server in-process
+import './server.js';
+
+const PORT = 3990;
+
 autoUpdater.logger = console;
 autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = true;
@@ -24,10 +29,33 @@ function createWindow(): void {
     }
   });
 
-  mainWindow.loadURL('http://127.0.0.1:3990');
+  const loadApp = (): void => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.loadURL(`http://127.0.0.1:${PORT}`);
+    }
+  };
+
+  // Wait briefly for server socket to bind, then load
+  setTimeout(loadApp, 500);
+
+  // If initial load fails due to timing, auto-retry
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode) => {
+    if (errorCode !== -3) {
+      setTimeout(loadApp, 800);
+    }
+  });
 
   mainWindow.on('closed', () => {
     mainWindow = null;
+  });
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    if (app.isPackaged) {
+      autoUpdater.checkForUpdates().catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err);
+        console.warn('[AutoUpdater] Gagal periksa update:', message);
+      });
+    }
   });
 }
 
@@ -100,13 +128,6 @@ function setupAutoUpdater(): void {
 app.whenReady().then(() => {
   createWindow();
   setupAutoUpdater();
-
-  if (app.isPackaged) {
-    autoUpdater.checkForUpdates().catch((err: unknown) => {
-      const message = err instanceof Error ? err.message : String(err);
-      console.warn('[AutoUpdater] Gagal periksa update:', message);
-    });
-  }
 });
 
 app.on('activate', () => {

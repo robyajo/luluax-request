@@ -36,6 +36,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 const electron_updater_1 = require("electron-updater");
 const path = __importStar(require("path"));
+// Start the local proxy backend server in-process
+require("./server.js");
+const PORT = 3990;
 electron_updater_1.autoUpdater.logger = console;
 electron_updater_1.autoUpdater.autoDownload = false;
 electron_updater_1.autoUpdater.autoInstallOnAppQuit = true;
@@ -55,9 +58,29 @@ function createWindow() {
             preload: path.join(__dirname, 'preload.js')
         }
     });
-    mainWindow.loadURL('http://127.0.0.1:3990');
+    const loadApp = () => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.loadURL(`http://127.0.0.1:${PORT}`);
+        }
+    };
+    // Wait briefly for server socket to bind, then load
+    setTimeout(loadApp, 500);
+    // If initial load fails due to timing, auto-retry
+    mainWindow.webContents.on('did-fail-load', (_event, errorCode) => {
+        if (errorCode !== -3) {
+            setTimeout(loadApp, 800);
+        }
+    });
     mainWindow.on('closed', () => {
         mainWindow = null;
+    });
+    mainWindow.webContents.on('did-finish-load', () => {
+        if (electron_1.app.isPackaged) {
+            electron_updater_1.autoUpdater.checkForUpdates().catch((err) => {
+                const message = err instanceof Error ? err.message : String(err);
+                console.warn('[AutoUpdater] Gagal periksa update:', message);
+            });
+        }
     });
 }
 function setupAutoUpdater() {
@@ -119,12 +142,6 @@ function setupAutoUpdater() {
 electron_1.app.whenReady().then(() => {
     createWindow();
     setupAutoUpdater();
-    if (electron_1.app.isPackaged) {
-        electron_updater_1.autoUpdater.checkForUpdates().catch((err) => {
-            const message = err instanceof Error ? err.message : String(err);
-            console.warn('[AutoUpdater] Gagal periksa update:', message);
-        });
-    }
 });
 electron_1.app.on('activate', () => {
     if (electron_1.BrowserWindow.getAllWindows().length === 0) {
