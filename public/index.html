@@ -29,17 +29,16 @@
 
       <!-- Sidebar Tabs -->
       <div class="sidebar-nav-tabs">
-        <button class="side-tab active" data-tab="collections">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-          </svg>
-          <span>Collections</span>
+        <button class="side-tab active" data-tab="collections" title="API Client Requests">
+          <span>Requests</span>
         </button>
-        <button class="side-tab" data-tab="history">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <polyline points="12 6 12 12 16 14"></polyline>
-          </svg>
+        <button class="side-tab" data-tab="rules" title="Requestly HTTP Interceptor Rules">
+          <span>Rules</span>
+        </button>
+        <button class="side-tab" data-tab="mocks" title="Mock API Server">
+          <span>Mocks</span>
+        </button>
+        <button class="side-tab" data-tab="history" title="Execution History">
           <span>History</span>
         </button>
       </div>
@@ -71,8 +70,38 @@
         </div>
       </div>
 
+      <!-- HTTP Rules Pane (Requestly Signature Feature) -->
+      <div class="sidebar-pane" id="pane-rules">
+        <div class="pane-action-bar">
+          <span class="history-title">HTTP Rules</span>
+          <button class="btn-text-sm" id="btn-new-rule">+ New Rule</button>
+        </div>
+        <div class="rules-list" id="rules-list">
+          <!-- Dynamic HTTP rules cards -->
+        </div>
+      </div>
+
+      <!-- Mock Server Pane (Requestly Signature Feature) -->
+      <div class="sidebar-pane" id="pane-mocks">
+        <div class="pane-action-bar">
+          <span class="history-title">Mock Server</span>
+          <button class="btn-text-sm" id="btn-new-mock">+ New Mock</button>
+        </div>
+        <div class="mocks-list" id="mocks-list">
+          <!-- Dynamic mock endpoint items -->
+        </div>
+      </div>
+
       <!-- Sidebar Footer (Cloud & Status) -->
       <div class="sidebar-footer">
+        <div class="user-profile-card" id="user-profile-card" style="display:none">
+          <div class="user-avatar" id="user-avatar-initials">R</div>
+          <div class="user-info">
+            <span class="user-name" id="user-display-name">Roby</span>
+            <span class="user-email" id="user-display-email">robyfull.dev@gmail.com</span>
+          </div>
+          <button class="btn-logout" id="btn-logout" title="Keluar / Logout" onclick="app.logout()">&times;</button>
+        </div>
         <div class="cloud-indicator" id="sidebar-cloud-badge">
           <div class="cloud-dot"></div>
           <span class="cloud-label" id="sidebar-cloud-text">Neon Cloud Ready</span>
@@ -374,6 +403,164 @@
         <button class="btn btn-secondary" id="btn-copy-code">Copy to Clipboard</button>
         <button class="btn btn-primary" onclick="app.closeModal('modal-code')">Close</button>
       </div>
+    </div>
+
+  <!-- MODAL: ADD / EDIT REQUESTLY RULE -->
+  <div class="modal-backdrop" id="modal-rule">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>New HTTP Interceptor Rule</h3>
+        <button class="modal-close" onclick="app.closeModal('modal-rule')">&times;</button>
+      </div>
+      <form id="form-rule" onsubmit="event.preventDefault(); app.saveRule();">
+        <input type="hidden" id="rule-id">
+        <div class="form-group">
+          <label>Rule Name *</label>
+          <input type="text" id="rule-name" class="form-input" placeholder="e.g. Redirect Production API to Localhost" required>
+        </div>
+        <div class="form-group">
+          <label>Rule Type *</label>
+          <select id="rule-type" class="form-select" onchange="app.switchRuleFormType(this.value)">
+            <option value="redirect">Redirect Request (URL A -> URL B)</option>
+            <option value="modify_headers">Modify Headers (Add / Override / Remove)</option>
+            <option value="modify_response">Modify Response (Mock API Response)</option>
+            <option value="delay">Delay Request (Simulate Network Latency)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Source URL Pattern (Wildcard * supported) *</label>
+          <input type="text" id="rule-pattern" class="form-input" placeholder="e.g. *api.prod.com/users*" required>
+        </div>
+        <!-- Conditional Fields -->
+        <div class="form-group" id="group-rule-target">
+          <label>Destination Target URL</label>
+          <input type="text" id="rule-target-url" class="form-input" placeholder="e.g. http://localhost:3000/users">
+        </div>
+        <div class="form-group" id="group-rule-delay" style="display:none">
+          <label>Delay Latency (in milliseconds)</label>
+          <input type="number" id="rule-delay-ms" class="form-input" value="1500">
+        </div>
+        <div class="form-group" id="group-rule-response" style="display:none">
+          <label>Status Code & Mock Response Body</label>
+          <input type="number" id="rule-status-code" class="form-input" value="200" style="margin-bottom:6px">
+          <textarea id="rule-response-body" class="form-textarea" rows="4" placeholder='{"status": "mocked", "data": []}'></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-text" onclick="app.closeModal('modal-rule')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Rule</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT MOCK ENDPOINT -->
+  <div class="modal-backdrop" id="modal-mock">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>Create Mock API Endpoint</h3>
+        <button class="modal-close" onclick="app.closeModal('modal-mock')">&times;</button>
+      </div>
+      <form id="form-mock" onsubmit="event.preventDefault(); app.saveMock();">
+        <div class="form-group">
+          <label>Mock Name *</label>
+          <input type="text" id="mock-name" class="form-input" placeholder="e.g. Users List Mock API" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-4">
+            <label>Method</label>
+            <select id="mock-method" class="form-select">
+              <option value="GET">GET</option>
+              <option value="POST">POST</option>
+              <option value="PUT">PUT</option>
+              <option value="DELETE">DELETE</option>
+            </select>
+          </div>
+          <div class="form-group col-8">
+            <label>Endpoint Path *</label>
+            <input type="text" id="mock-endpoint" class="form-input" placeholder="/mock/api/users" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-6">
+            <label>Status Code</label>
+            <input type="number" id="mock-status-code" class="form-input" value="200" required>
+          </div>
+          <div class="form-group col-6">
+            <label>Delay (ms)</label>
+            <input type="number" id="mock-delay-ms" class="form-input" value="200">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Mock JSON Response Body</label>
+          <textarea id="mock-body" class="form-textarea" rows="5" placeholder='[\n  {"id": 1, "name": "Sample Mock Data"}\n]'></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-text" onclick="app.closeModal('modal-mock')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Deploy Mock Endpoint</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <!-- FULLSCREEN AUTH OVERLAY (LOGIN & REGISTER GUARD) -->
+  <div class="auth-overlay" id="auth-overlay">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+          </svg>
+        </div>
+        <div class="auth-brand-text">
+          <h2>LuluaX<span class="brand-cyan">Request</span></h2>
+          <p>Modern API Client with Neon Cloud Sync</p>
+        </div>
+      </div>
+
+      <!-- Server Connection Status Pill -->
+      <div class="server-status-pill checking" id="auth-server-status">
+        <span class="status-dot"></span>
+        <span class="status-label" id="auth-server-label">Memeriksa koneksi ke server cloud...</span>
+      </div>
+
+      <!-- Auth Mode Tabs (Masuk / Daftar) -->
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab active" id="auth-tab-login" onclick="app.switchAuthMode('login')">Masuk (Login)</button>
+        <button type="button" class="auth-tab" id="auth-tab-register" onclick="app.switchAuthMode('register')">Daftar (Register)</button>
+      </div>
+
+      <!-- Auth Form -->
+      <form id="auth-form" onsubmit="event.preventDefault(); app.handleAuthSubmit();">
+        <div class="form-group" id="group-auth-name" style="display:none">
+          <label>Nama Lengkap</label>
+          <input type="text" id="auth-name" class="form-input" placeholder="Masukkan nama Anda">
+        </div>
+
+        <div class="form-group">
+          <label>Alamat Email</label>
+          <input type="email" id="auth-email" class="form-input" placeholder="robyfull.dev@gmail.com" required>
+        </div>
+
+        <div class="form-group">
+          <label>Kata Sandi (Password)</label>
+          <input type="password" id="auth-password" class="form-input" placeholder="Password@123" required>
+        </div>
+
+        <div id="auth-error-msg" class="auth-error" style="display:none"></div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="btn-auth-submit">
+          Masuk ke LuluaX
+        </button>
+
+        <!-- Quick Demo Account Fill Button -->
+        <div class="auth-quick-fill">
+          <button type="button" class="btn-quick-seed" onclick="app.quickFillSeededUser('roby')">
+            ⚡ Gunakan Akun: robyfull.dev@gmail.com
+          </button>
+          <button type="button" class="btn-quick-seed" onclick="app.quickFillSeededUser('admin')">
+            🛡️ Gunakan Akun: admin@luluax.com (Admin)
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 

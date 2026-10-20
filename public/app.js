@@ -12,6 +12,11 @@ class LuluaXRequestApp {
     this.activeReqConfigTab = 'params';
     this.activeResTab = 'body';
     this.lastResponse = null;
+    this.currentUser = null;
+    this.authMode = 'login';
+    this.serverOnline = false;
+    this.rules = [];
+    this.mocks = [];
 
     this.init();
   }
@@ -20,16 +25,159 @@ class LuluaXRequestApp {
     this.bindEvents();
     await this.detectSystem();
     await this.loadSettings();
+    await this.checkServerAndAuth();
     await this.loadEnvironments();
     await this.loadCollections();
     await this.loadHistory();
-
-    // Open first request by default if available
+    await this.loadRules();
+    await this.loadMocks();
     if (this.collections.length > 0 && this.collections[0].items.length > 0) {
       this.openRequestInTab(this.collections[0].items[0]);
     } else {
       this.createNewTab();
     }
+  }
+
+  async checkServerAndAuth() {
+    const serverUrl = this.settings.cloudApiUrl || 'https://www.luluax-service.duckdns.org';
+    const statusPill = document.getElementById('auth-server-status');
+    const statusLabel = document.getElementById('auth-server-label');
+
+    statusPill.className = 'server-status-pill checking';
+    statusLabel.textContent = `Memeriksa server cloud (${serverUrl})...`;
+
+    try {
+      const healthRes = await fetch(`${serverUrl}/api/health`, { method: 'GET', signal: AbortSignal.timeout(6000) });
+      const healthData = await healthRes.json();
+      if (healthData.success) {
+        this.serverOnline = true;
+        statusPill.className = 'server-status-pill online';
+        statusLabel.textContent = `● Terhubung ke Server Cloud (${serverUrl})`;
+      } else {
+        throw new Error('Server unready');
+      }
+    } catch (e) {
+      this.serverOnline = false;
+      statusPill.className = 'server-status-pill offline';
+      statusLabel.textContent = `▲ Tidak dapat terhubung ke server cloud. Pastikan internet & server aktif.`;
+    }
+
+    const savedToken = localStorage.getItem('luluax_req_auth_token');
+    if (savedToken && this.serverOnline) {
+      try {
+        const meRes = await fetch(`${serverUrl}/api/auth/me`, {
+          headers: { 'Authorization': `Bearer ${savedToken}` }
+        });
+        const meData = await meRes.json();
+        if (meData.success && meData.user) {
+          this.currentUser = meData.user;
+          document.getElementById('auth-overlay').style.display = 'none';
+          this.renderUserProfile();
+          return;
+        }
+      } catch (e) {
+        console.warn('Session verification error:', e);
+      }
+    }
+
+    document.getElementById('auth-overlay').style.display = 'flex';
+  }
+
+  switchAuthMode(mode) {
+    this.authMode = mode;
+    document.getElementById('auth-tab-login').classList.toggle('active', mode === 'login');
+    document.getElementById('auth-tab-register').classList.toggle('active', mode === 'register');
+    document.getElementById('group-auth-name').style.display = mode === 'register' ? 'block' : 'none';
+    document.getElementById('btn-auth-submit').textContent = mode === 'login' ? 'Masuk ke LuluaX' : 'Daftar Akun Baru';
+    document.getElementById('auth-error-msg').style.display = 'none';
+  }
+
+  quickFillSeededUser(type) {
+    this.switchAuthMode('login');
+    if (type === 'roby') {
+      document.getElementById('auth-email').value = 'robyfull.dev@gmail.com';
+      document.getElementById('auth-password').value = 'Password@123';
+    } else {
+      document.getElementById('auth-email').value = 'admin@luluax.com';
+      document.getElementById('auth-password').value = 'Password@123';
+    }
+  }
+
+  async handleAuthSubmit() {
+    const serverUrl = this.settings.cloudApiUrl || 'https://www.luluax-service.duckdns.org';
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    const name = document.getElementById('auth-name').value.trim();
+    const errorBox = document.getElementById('auth-error-msg');
+    const submitBtn = document.getElementById('btn-auth-submit');
+
+    errorBox.style.display = 'none';
+
+    if (!this.serverOnline) {
+      errorBox.textContent = 'Gagal: Aplikasi harus terhubung ke internet dan server untuk autentikasi.';
+      errorBox.style.display = 'block';
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Memproses...';
+
+    try {
+      const endpoint = this.authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
+      const payload = this.authMode === 'login' ? { email, password } : { email, password, name };
+
+      const res = await fetch(`${serverUrl}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        localStorage.setItem('luluax_req_auth_token', data.token);
+        this.currentUser = data.user;
+        document.getElementById('auth-overlay').style.display = 'none';
+        this.renderUserProfile();
+
+        if (!this.settings.cloudSyncKey) {
+          this.settings.cloudSyncKey = data.user.id || data.user.email;
+          document.getElementById('cloud-sync-key').value = this.settings.cloudSyncKey;
+          await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(this.settings)
+          });
+        }
+      } else {
+        errorBox.textContent = data.error || 'Autentikasi gagal. Silakan periksa kembali.';
+        errorBox.style.display = 'block';
+      }
+    } catch (e) {
+      errorBox.textContent = 'Kesalahan jaringan: ' + e.message;
+      errorBox.style.display = 'block';
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = this.authMode === 'login' ? 'Masuk ke LuluaX' : 'Daftar Akun Baru';
+    }
+  }
+
+  renderUserProfile() {
+    if (!this.currentUser) return;
+    const card = document.getElementById('user-profile-card');
+    card.style.display = 'flex';
+    document.getElementById('user-display-name').textContent = this.currentUser.name || this.currentUser.email.split('@')[0];
+    document.getElementById('user-display-email').textContent = this.currentUser.email;
+    const initials = (this.currentUser.name || this.currentUser.email).substring(0, 1).toUpperCase();
+    document.getElementById('user-avatar-initials').textContent = initials;
+  }
+
+  logout() {
+    if (!confirm('Apakah Anda yakin ingin keluar / logout?')) return;
+    localStorage.removeItem('luluax_req_auth_token');
+    this.currentUser = null;
+    document.getElementById('user-profile-card').style.display = 'none';
+    document.getElementById('auth-overlay').style.display = 'flex';
+    this.switchAuthMode('login');
   }
 
   async detectSystem() {
@@ -126,6 +274,10 @@ class LuluaXRequestApp {
     document.getElementById('btn-open-cloud').addEventListener('click', () => {
       document.getElementById('modal-cloud').classList.add('active');
     });
+
+    // Requestly Rules and Mocks buttons
+    document.getElementById('btn-new-rule').addEventListener('click', () => this.openRuleModal());
+    document.getElementById('btn-new-mock').addEventListener('click', () => this.openMockModal());
 
     document.getElementById('btn-cloud-push-modal').addEventListener('click', () => this.pushToCloud());
     document.getElementById('btn-cloud-pull-modal').addEventListener('click', () => this.pullFromCloud());
@@ -964,6 +1116,213 @@ class LuluaXRequestApp {
       }
     } catch (e) {
       statusBox.textContent = '✗ Network error: ' + e.message;
+    }
+  }
+
+  // -------------------------------------------------------------
+  // Requestly Signature Features: HTTP Rules & Mock Server
+  // -------------------------------------------------------------
+  async loadRules() {
+    try {
+      const res = await fetch('/api/rules');
+      const data = await res.json();
+      if (data.success) {
+        this.rules = data.rules;
+        this.renderRules();
+      }
+    } catch (e) {
+      console.warn('Load rules error:', e);
+    }
+  }
+
+  renderRules() {
+    const list = document.getElementById('rules-list');
+    list.innerHTML = '';
+    if (this.rules.length === 0) {
+      list.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted); font-size:12px">Belum ada HTTP Rule. Klik "+ New Rule" untuk membuat.</div>`;
+      return;
+    }
+
+    this.rules.forEach(r => {
+      const el = document.createElement('div');
+      el.className = 'rule-card';
+      el.innerHTML = `
+        <div class="rule-header">
+          <div style="display:flex; align-items:center; gap:6px">
+            <span class="rule-tag ${r.ruleType}">${r.ruleType.replace('_', ' ')}</span>
+            <span class="rule-title">${this.escapeHtml(r.name)}</span>
+          </div>
+          <label class="switch-toggle">
+            <input type="checkbox" ${r.enabled ? 'checked' : ''} onchange="app.toggleRule('${r.id}')">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="rule-detail">${this.escapeHtml(r.sourceUrlPattern)}</div>
+        <div style="display:flex; justify-content:space-between; align-items:center">
+          <span style="font-size:10px; color:var(--text-muted)">
+            ${r.ruleType === 'redirect' ? '➔ ' + this.escapeHtml(r.targetUrl || '') : (r.ruleType === 'delay' ? `Delay: ${r.delayMs}ms` : 'Response Override')}
+          </span>
+          <button class="btn-icon-sm" title="Hapus Rule" onclick="app.deleteRule('${r.id}')">&times;</button>
+        </div>
+      `;
+      list.appendChild(el);
+    });
+  }
+
+  openRuleModal() {
+    document.getElementById('form-rule').reset();
+    document.getElementById('rule-id').value = '';
+    this.switchRuleFormType('redirect');
+    document.getElementById('modal-rule').classList.add('active');
+  }
+
+  switchRuleFormType(type) {
+    document.getElementById('group-rule-target').style.display = type === 'redirect' ? 'block' : 'none';
+    document.getElementById('group-rule-delay').style.display = type === 'delay' ? 'block' : 'none';
+    document.getElementById('group-rule-response').style.display = type === 'modify_response' ? 'block' : 'none';
+  }
+
+  async saveRule() {
+    const type = document.getElementById('rule-type').value;
+    const payload = {
+      name: document.getElementById('rule-name').value.trim(),
+      ruleType: type,
+      sourceUrlPattern: document.getElementById('rule-pattern').value.trim(),
+      targetUrl: document.getElementById('rule-target-url').value.trim(),
+      delayMs: parseInt(document.getElementById('rule-delay-ms').value, 10) || 0,
+      statusCode: parseInt(document.getElementById('rule-status-code').value, 10) || 200,
+      responseBody: document.getElementById('rule-response-body').value,
+      enabled: true
+    };
+
+    try {
+      const res = await fetch('/api/rules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.closeModal('modal-rule');
+        await this.loadRules();
+      }
+    } catch (e) {
+      alert('Error: ' + e.message);
+    }
+  }
+
+  async toggleRule(id) {
+    try {
+      await fetch(`/api/rules/${id}/toggle`, { method: 'POST' });
+      await this.loadRules();
+    } catch (e) {
+      console.warn('Toggle error:', e);
+    }
+  }
+
+  async deleteRule(id) {
+    if (!confirm('Hapus rule ini?')) return;
+    try {
+      await fetch(`/api/rules/${id}`, { method: 'DELETE' });
+      await this.loadRules();
+    } catch (e) {
+      alert('Error: ' + e.message);
+    }
+  }
+
+  async loadMocks() {
+    try {
+      const res = await fetch('/api/mocks');
+      const data = await res.json();
+      if (data.success) {
+        this.mocks = data.mocks;
+        this.renderMocks();
+      }
+    } catch (e) {
+      console.warn('Load mocks error:', e);
+    }
+  }
+
+  renderMocks() {
+    const list = document.getElementById('mocks-list');
+    list.innerHTML = '';
+    if (this.mocks.length === 0) {
+      list.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted); font-size:12px">Belum ada Mock API Endpoint. Klik "+ New Mock" untuk membuat.</div>`;
+      return;
+    }
+
+    this.mocks.forEach(m => {
+      const el = document.createElement('div');
+      el.className = 'mock-card';
+      el.innerHTML = `
+        <div class="mock-header">
+          <div style="display:flex; align-items:center; gap:6px">
+            <span class="req-badge-method method-${m.method}">${m.method}</span>
+            <span class="mock-title">${this.escapeHtml(m.name)}</span>
+          </div>
+          <span class="badge-status status-2xx" style="font-size:9.5px">${m.statusCode}</span>
+        </div>
+        <div class="mock-detail">${this.escapeHtml(m.endpoint)}</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px">
+          <button class="btn-text-sm" onclick="app.testMockInActiveTab('${this.escapeJs(m.method)}', '${this.escapeJs(m.endpoint)}')">
+            ▶ Uji di Editor
+          </button>
+          <button class="btn-icon-sm" title="Hapus Mock" onclick="app.deleteMock('${m.id}')">&times;</button>
+        </div>
+      `;
+      list.appendChild(el);
+    });
+  }
+
+  openMockModal() {
+    document.getElementById('form-mock').reset();
+    document.getElementById('modal-mock').classList.add('active');
+  }
+
+  async saveMock() {
+    const payload = {
+      name: document.getElementById('mock-name').value.trim(),
+      method: document.getElementById('mock-method').value,
+      endpoint: document.getElementById('mock-endpoint').value.trim(),
+      statusCode: parseInt(document.getElementById('mock-status-code').value, 10) || 200,
+      delayMs: parseInt(document.getElementById('mock-delay-ms').value, 10) || 0,
+      responseBody: document.getElementById('mock-body').value
+    };
+
+    try {
+      const res = await fetch('/api/mocks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.closeModal('modal-mock');
+        await this.loadMocks();
+      }
+    } catch (e) {
+      alert('Error: ' + e.message);
+    }
+  }
+
+  testMockInActiveTab(method, endpoint) {
+    this.createNewTab();
+    const tab = this.tabs.find(t => t.id === this.activeTabId);
+    if (tab) {
+      tab.method = method;
+      tab.url = `http://127.0.0.1:3990${endpoint}`;
+      this.populateTabFormData(tab);
+      this.renderRequestTabs();
+    }
+  }
+
+  async deleteMock(id) {
+    if (!confirm('Hapus mock endpoint ini?')) return;
+    try {
+      await fetch(`/api/mocks/${id}`, { method: 'DELETE' });
+      await this.loadMocks();
+    } catch (e) {
+      alert('Error: ' + e.message);
     }
   }
 

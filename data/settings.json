@@ -1,6 +1,6 @@
 {
   "cloudApiUrl": "https://www.luluax-service.duckdns.org",
-  "cloudSyncKey": "",
+  "cloudSyncKey": "robyfull.dev@gmail.com",
   "timeoutMs": 30000,
   "followRedirects": true,
   "verifySsl": true

@@ -168,16 +168,186 @@ app.post('/api/settings', (req, res) => {
 });
 
 // -------------------------------------------------------------
-// Universal API Proxy (Bypasses Browser CORS restrictions)
+// Requestly Feature 1 & 2: Mock API Server & HTTP Interceptor Rules
+// -------------------------------------------------------------
+app.get('/api/mocks', (req, res) => {
+  const mocks = readData('mocks.json', [
+    {
+      id: 'mock_demo_users',
+      name: 'Mock Users API',
+      endpoint: '/mock/api/users',
+      method: 'GET',
+      statusCode: 200,
+      delayMs: 300,
+      responseBody: JSON.stringify([
+        { id: 1, name: 'Roby Developer', role: 'Fullstack' },
+        { id: 2, name: 'Jane Doe', role: 'DevOps' }
+      ], null, 2),
+      enabled: true
+    }
+  ]);
+  res.json({ success: true, mocks });
+});
+
+app.post('/api/mocks', (req, res) => {
+  const mocks = readData('mocks.json', []);
+  const newMock = {
+    id: req.body.id || `mock_${Date.now()}`,
+    name: req.body.name || 'New Mock',
+    endpoint: req.body.endpoint || '/mock/sample',
+    method: (req.body.method || 'GET').toUpperCase(),
+    statusCode: Number(req.body.statusCode || 200),
+    delayMs: Number(req.body.delayMs || 0),
+    responseBody: typeof req.body.responseBody === 'string' ? req.body.responseBody : '{}',
+    enabled: req.body.enabled !== false,
+    createdAt: Date.now()
+  };
+  mocks.push(newMock);
+  writeData('mocks.json', mocks);
+  res.json({ success: true, mock: newMock });
+});
+
+app.delete('/api/mocks/:id', (req, res) => {
+  let mocks = readData('mocks.json', []);
+  mocks = mocks.filter(m => m.id !== req.params.id);
+  writeData('mocks.json', mocks);
+  res.json({ success: true });
+});
+
+// Live Mock Endpoint Handler
+app.all('/mock/*', async (req, res) => {
+  const mocks = readData('mocks.json', []);
+  const cleanPath = req.path.replace(/\/+$/, '');
+  const matched = mocks.find(m => m.enabled && m.endpoint.replace(/\/+$/, '') === cleanPath && m.method === req.method);
+
+  if (!matched) {
+    return res.status(404).json({ error: 'Mock endpoint not found or inactive', path: req.path, method: req.method });
+  }
+
+  if (matched.delayMs > 0) {
+    await new Promise(resolve => setTimeout(resolve, matched.delayMs));
+  }
+
+  res.status(matched.statusCode);
+  try {
+    const json = JSON.parse(matched.responseBody);
+    res.json(json);
+  } catch (e) {
+    res.send(matched.responseBody);
+  }
+});
+
+// HTTP Interceptor Rules APIs
+app.get('/api/rules', (req, res) => {
+  const rules = readData('rules.json', [
+    {
+      id: 'rule_sample_delay',
+      name: 'Simulate 3G Delay',
+      ruleType: 'delay',
+      sourceUrlPattern: '*jsonplaceholder*',
+      delayMs: 800,
+      enabled: false
+    }
+  ]);
+  res.json({ success: true, rules });
+});
+
+app.post('/api/rules', (req, res) => {
+  const rules = readData('rules.json', []);
+  const newRule = {
+    id: req.body.id || `rule_${Date.now()}`,
+    name: req.body.name || 'New Interceptor Rule',
+    ruleType: req.body.ruleType || 'redirect',
+    sourceUrlPattern: req.body.sourceUrlPattern || '',
+    targetUrl: req.body.targetUrl || '',
+    headersToModify: Array.isArray(req.body.headersToModify) ? req.body.headersToModify : [],
+    statusCode: Number(req.body.statusCode || 200),
+    responseBody: req.body.responseBody || '{}',
+    delayMs: Number(req.body.delayMs || 0),
+    enabled: req.body.enabled !== false,
+    createdAt: Date.now()
+  };
+  rules.push(newRule);
+  writeData('rules.json', rules);
+  res.json({ success: true, rule: newRule });
+});
+
+app.post('/api/rules/:id/toggle', (req, res) => {
+  const rules = readData('rules.json', []);
+  const rule = rules.find(r => r.id === req.params.id);
+  if (!rule) return res.status(404).json({ success: false, error: 'Rule not found' });
+  rule.enabled = !rule.enabled;
+  writeData('rules.json', rules);
+  res.json({ success: true, enabled: rule.enabled });
+});
+
+app.delete('/api/rules/:id', (req, res) => {
+  let rules = readData('rules.json', []);
+  rules = rules.filter(r => r.id !== req.params.id);
+  writeData('rules.json', rules);
+  res.json({ success: true });
+});
+
+// -------------------------------------------------------------
+// Universal API Proxy (With Requestly Interceptor Rules Applied!)
 // -------------------------------------------------------------
 app.post('/api/proxy', async (req, res) => {
-  const { url, method = 'GET', headers = {}, body, bodyType } = req.body;
+  let { url, method = 'GET', headers = {}, body, bodyType } = req.body;
 
   if (!url) {
     return res.status(400).json({ success: false, error: 'URL is required' });
   }
 
   const startTime = Date.now();
+  const rules = readData('rules.json', []);
+
+  // Apply Active Requestly Rules
+  for (const rule of rules) {
+    if (!rule.enabled || !rule.sourceUrlPattern) continue;
+
+    // Wildcard match pattern
+    const patternRegex = new RegExp('^' + rule.sourceUrlPattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$', 'i');
+    if (patternRegex.test(url)) {
+      // Rule 1: Delay
+      if (rule.ruleType === 'delay' && rule.delayMs > 0) {
+        await new Promise(r => setTimeout(r, rule.delayMs));
+      }
+
+      // Rule 2: Redirect
+      if (rule.ruleType === 'redirect' && rule.targetUrl) {
+        url = rule.targetUrl;
+      }
+
+      // Rule 3: Modify Headers
+      if (rule.ruleType === 'modify_headers' && Array.isArray(rule.headersToModify)) {
+        rule.headersToModify.forEach(h => {
+          if (h.action === 'remove') delete headers[h.key];
+          else headers[h.key] = h.value;
+        });
+      }
+
+      // Rule 4: Modify Response (Mock Intercept)
+      if (rule.ruleType === 'modify_response') {
+        const duration = Date.now() - startTime;
+        let parsedData = rule.responseBody;
+        let isJson = false;
+        try {
+          parsedData = JSON.parse(rule.responseBody);
+          isJson = true;
+        } catch (e) {}
+        return res.json({
+          success: true,
+          status: rule.statusCode || 200,
+          statusText: 'Intercepted by Requestly Rule',
+          headers: { 'x-intercepted-by': 'LuluaX-Request Rule: ' + rule.name },
+          data: parsedData,
+          isJson,
+          size: Buffer.byteLength(String(rule.responseBody || '')),
+          duration
+        });
+      }
+    }
+  }
 
   try {
     const fetchOptions = {

@@ -32,6 +32,11 @@
       "type": "new",
       "id": "Dukungan Aplikasi Desktop Portabel: Tersedia sebagai aplikasi desktop mandiri yang ringan tanpa instalasi rumit.",
       "en": "Portable Desktop Application Support: Available as a standalone lightweight desktop app without complex setup."
+    },
+    {
+      "type": "new",
+      "id": "Pembuat Paket Lintas Platform: Skrip otomatisasi siap pakai untuk menjalankan dan memaketkan aplikasi di Windows dan macOS.",
+      "en": "Cross-Platform Package Builders: Ready-to-use automation scripts to run and package applications on Windows and macOS."
     }
   ]
 }
