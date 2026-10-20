@@ -1,16 +1,25 @@
-require('dotenv').config();
-const express = require('express');
-const http = require('http');
-const path = require('path');
-const fs = require('fs');
-const os = require('os');
+import dotenv from 'dotenv';
+dotenv.config();
 
-const PORT = process.env.PORT || 3990;
+import express, { type Request, type Response } from 'express';
+import path from 'path';
+import fs from 'fs';
+import os from 'os';
+import type {
+  CollectionItem,
+  EnvironmentItem,
+  HistoryItem,
+  MockItem,
+  RuleItem,
+  SettingsData
+} from './types.js';
+
+const PORT: number = parseInt(process.env.PORT || '3990', 10);
 const app = express();
 
-function getWritableDataDir(appName, defaultDataPath) {
+function getWritableDataDir(appName: string, defaultDataPath: string): string {
   const isInsideAsar = __dirname.includes('.asar');
-  let targetDir;
+  let targetDir: string;
   if (isInsideAsar) {
     if (process.env.APPDATA) {
       targetDir = path.join(process.env.APPDATA, appName);
@@ -27,7 +36,6 @@ function getWritableDataDir(appName, defaultDataPath) {
     fs.mkdirSync(targetDir, { recursive: true });
   }
 
-  // Copy initial seed files from defaultDataPath into writable dir if needed
   if (fs.existsSync(defaultDataPath)) {
     try {
       const files = fs.readdirSync(defaultDataPath);
@@ -40,16 +48,17 @@ function getWritableDataDir(appName, defaultDataPath) {
           }
         }
       }
-    } catch (e) {
-      // ignore seed copy warnings
+    } catch {
+      // ignore seed read warnings
     }
   }
   return targetDir;
 }
 
-const DATA_DIR = getWritableDataDir('LuluaX-Request', path.join(__dirname, 'data'));
+const PROJECT_ROOT = __dirname.includes('dist-electron') ? path.join(__dirname, '..') : __dirname;
+const DATA_DIR = getWritableDataDir('LuluaX-Request', path.join(PROJECT_ROOT, 'data'));
 
-function readData(file, defaultVal = []) {
+function readData<T>(file: string, defaultVal: T): T {
   const filePath = path.join(DATA_DIR, file);
   try {
     if (!fs.existsSync(filePath)) {
@@ -57,32 +66,34 @@ function readData(file, defaultVal = []) {
       return defaultVal;
     }
     const content = fs.readFileSync(filePath, 'utf-8');
-    return JSON.parse(content);
-  } catch (err) {
-    console.error(`Error reading ${file}:`, err.message);
+    return JSON.parse(content) as T;
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error(`Error reading ${file}:`, errorMsg);
     return defaultVal;
   }
 }
 
-function writeData(file, data) {
+function writeData<T>(file: string, data: T): boolean {
   const filePath = path.join(DATA_DIR, file);
   try {
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
     return true;
-  } catch (err) {
-    console.error(`Error writing ${file}:`, err.message);
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error(`Error writing ${file}:`, errorMsg);
     return false;
   }
 }
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(PROJECT_ROOT, 'public')));
 
 // -------------------------------------------------------------
 // System Info API
 // -------------------------------------------------------------
-app.get('/api/system', (req, res) => {
+app.get('/api/system', (_req: Request, res: Response) => {
   const platform = os.platform();
   const arch = os.arch();
   let platformLabel = 'Unknown';
@@ -107,50 +118,50 @@ app.get('/api/system', (req, res) => {
 });
 
 // -------------------------------------------------------------
-// Local Data APIs (Collections, Environments, History, Settings)
+// Local Data APIs
 // -------------------------------------------------------------
-app.get('/api/collections', (req, res) => {
-  const cols = readData('collections.json', []);
+app.get('/api/collections', (_req: Request, res: Response) => {
+  const cols = readData<CollectionItem[]>('collections.json', []);
   res.json({ success: true, collections: cols });
 });
 
-app.post('/api/collections', (req, res) => {
+app.post('/api/collections', (req: Request, res: Response) => {
   writeData('collections.json', req.body);
   res.json({ success: true });
 });
 
-app.get('/api/environments', (req, res) => {
-  const envs = readData('environments.json', []);
+app.get('/api/environments', (_req: Request, res: Response) => {
+  const envs = readData<EnvironmentItem[]>('environments.json', []);
   res.json({ success: true, environments: envs });
 });
 
-app.post('/api/environments', (req, res) => {
+app.post('/api/environments', (req: Request, res: Response) => {
   writeData('environments.json', req.body);
   res.json({ success: true });
 });
 
-app.get('/api/history', (req, res) => {
-  const history = readData('history.json', []);
+app.get('/api/history', (_req: Request, res: Response) => {
+  const history = readData<HistoryItem[]>('history.json', []);
   res.json({ success: true, history });
 });
 
-app.post('/api/history', (req, res) => {
-  let history = readData('history.json', []);
-  history.unshift(req.body);
+app.post('/api/history', (req: Request, res: Response) => {
+  let history = readData<HistoryItem[]>('history.json', []);
+  history.unshift(req.body as HistoryItem);
   if (history.length > 50) history = history.slice(0, 50);
   writeData('history.json', history);
   res.json({ success: true });
 });
 
-app.delete('/api/history', (req, res) => {
+app.delete('/api/history', (_req: Request, res: Response) => {
   writeData('history.json', []);
   res.json({ success: true });
 });
 
-app.get('/api/settings', (req, res) => {
+app.get('/api/settings', (_req: Request, res: Response) => {
   const defaultUrl = process.env.CLOUD_API_URL || 'https://www.luluax-service.duckdns.org';
   const defaultKey = process.env.CLOUD_SYNC_KEY || '';
-  const settings = readData('settings.json', {
+  const settings = readData<SettingsData>('settings.json', {
     cloudApiUrl: defaultUrl,
     cloudSyncKey: defaultKey,
     timeoutMs: 30000
@@ -160,46 +171,33 @@ app.get('/api/settings', (req, res) => {
   res.json({ success: true, settings });
 });
 
-app.post('/api/settings', (req, res) => {
-  const cur = readData('settings.json', {});
-  const updated = { ...cur, ...req.body };
+app.post('/api/settings', (req: Request, res: Response) => {
+  const cur = readData<SettingsData>('settings.json', {});
+  const updated = { ...cur, ...(req.body as SettingsData) };
   writeData('settings.json', updated);
   res.json({ success: true, settings: updated });
 });
 
 // -------------------------------------------------------------
-// Requestly Feature 1 & 2: Mock API Server & HTTP Interceptor Rules
+// Requestly Features: Mock Server & HTTP Rules
 // -------------------------------------------------------------
-app.get('/api/mocks', (req, res) => {
-  const mocks = readData('mocks.json', [
-    {
-      id: 'mock_demo_users',
-      name: 'Mock Users API',
-      endpoint: '/mock/api/users',
-      method: 'GET',
-      statusCode: 200,
-      delayMs: 300,
-      responseBody: JSON.stringify([
-        { id: 1, name: 'Roby Developer', role: 'Fullstack' },
-        { id: 2, name: 'Jane Doe', role: 'DevOps' }
-      ], null, 2),
-      enabled: true
-    }
-  ]);
+app.get('/api/mocks', (_req: Request, res: Response) => {
+  const mocks = readData<MockItem[]>('mocks.json', []);
   res.json({ success: true, mocks });
 });
 
-app.post('/api/mocks', (req, res) => {
-  const mocks = readData('mocks.json', []);
-  const newMock = {
-    id: req.body.id || `mock_${Date.now()}`,
-    name: req.body.name || 'New Mock',
-    endpoint: req.body.endpoint || '/mock/sample',
-    method: (req.body.method || 'GET').toUpperCase(),
-    statusCode: Number(req.body.statusCode || 200),
-    delayMs: Number(req.body.delayMs || 0),
-    responseBody: typeof req.body.responseBody === 'string' ? req.body.responseBody : '{}',
-    enabled: req.body.enabled !== false,
+app.post('/api/mocks', (req: Request, res: Response) => {
+  const mocks = readData<MockItem[]>('mocks.json', []);
+  const body = req.body as Partial<MockItem>;
+  const newMock: MockItem = {
+    id: body.id || `mock_${Date.now()}`,
+    name: body.name || 'New Mock',
+    endpoint: body.endpoint || '/mock/sample',
+    method: (body.method || 'GET').toUpperCase(),
+    statusCode: Number(body.statusCode || 200),
+    delayMs: Number(body.delayMs || 0),
+    responseBody: typeof body.responseBody === 'string' ? body.responseBody : '{}',
+    enabled: body.enabled !== false,
     createdAt: Date.now()
   };
   mocks.push(newMock);
@@ -207,16 +205,16 @@ app.post('/api/mocks', (req, res) => {
   res.json({ success: true, mock: newMock });
 });
 
-app.delete('/api/mocks/:id', (req, res) => {
-  let mocks = readData('mocks.json', []);
+app.delete('/api/mocks/:id', (req: Request, res: Response) => {
+  let mocks = readData<MockItem[]>('mocks.json', []);
   mocks = mocks.filter(m => m.id !== req.params.id);
   writeData('mocks.json', mocks);
   res.json({ success: true });
 });
 
 // Live Mock Endpoint Handler
-app.all('/mock/*', async (req, res) => {
-  const mocks = readData('mocks.json', []);
+app.all('/mock/*', async (req: Request, res: Response) => {
+  const mocks = readData<MockItem[]>('mocks.json', []);
   const cleanPath = req.path.replace(/\/+$/, '');
   const matched = mocks.find(m => m.enabled && m.endpoint.replace(/\/+$/, '') === cleanPath && m.method === req.method);
 
@@ -225,46 +223,40 @@ app.all('/mock/*', async (req, res) => {
   }
 
   if (matched.delayMs > 0) {
-    await new Promise(resolve => setTimeout(resolve, matched.delayMs));
+    const { promise, resolve } = Promise.withResolvers<void>();
+    setTimeout(resolve, matched.delayMs);
+    await promise;
   }
 
   res.status(matched.statusCode);
   try {
-    const json = JSON.parse(matched.responseBody);
+    const json: unknown = JSON.parse(matched.responseBody);
     res.json(json);
-  } catch (e) {
+  } catch {
     res.send(matched.responseBody);
   }
 });
 
 // HTTP Interceptor Rules APIs
-app.get('/api/rules', (req, res) => {
-  const rules = readData('rules.json', [
-    {
-      id: 'rule_sample_delay',
-      name: 'Simulate 3G Delay',
-      ruleType: 'delay',
-      sourceUrlPattern: '*jsonplaceholder*',
-      delayMs: 800,
-      enabled: false
-    }
-  ]);
+app.get('/api/rules', (_req: Request, res: Response) => {
+  const rules = readData<RuleItem[]>('rules.json', []);
   res.json({ success: true, rules });
 });
 
-app.post('/api/rules', (req, res) => {
-  const rules = readData('rules.json', []);
-  const newRule = {
-    id: req.body.id || `rule_${Date.now()}`,
-    name: req.body.name || 'New Interceptor Rule',
-    ruleType: req.body.ruleType || 'redirect',
-    sourceUrlPattern: req.body.sourceUrlPattern || '',
-    targetUrl: req.body.targetUrl || '',
-    headersToModify: Array.isArray(req.body.headersToModify) ? req.body.headersToModify : [],
-    statusCode: Number(req.body.statusCode || 200),
-    responseBody: req.body.responseBody || '{}',
-    delayMs: Number(req.body.delayMs || 0),
-    enabled: req.body.enabled !== false,
+app.post('/api/rules', (req: Request, res: Response) => {
+  const rules = readData<RuleItem[]>('rules.json', []);
+  const body = req.body as Partial<RuleItem>;
+  const newRule: RuleItem = {
+    id: body.id || `rule_${Date.now()}`,
+    name: body.name || 'New Interceptor Rule',
+    ruleType: body.ruleType || 'redirect',
+    sourceUrlPattern: body.sourceUrlPattern || '',
+    targetUrl: body.targetUrl || '',
+    headersToModify: Array.isArray(body.headersToModify) ? body.headersToModify : [],
+    statusCode: Number(body.statusCode || 200),
+    responseBody: body.responseBody || '{}',
+    delayMs: Number(body.delayMs || 0),
+    enabled: body.enabled !== false,
     createdAt: Date.now()
   };
   rules.push(newRule);
@@ -272,8 +264,8 @@ app.post('/api/rules', (req, res) => {
   res.json({ success: true, rule: newRule });
 });
 
-app.post('/api/rules/:id/toggle', (req, res) => {
-  const rules = readData('rules.json', []);
+app.post('/api/rules/:id/toggle', (req: Request, res: Response) => {
+  const rules = readData<RuleItem[]>('rules.json', []);
   const rule = rules.find(r => r.id === req.params.id);
   if (!rule) return res.status(404).json({ success: false, error: 'Rule not found' });
   rule.enabled = !rule.enabled;
@@ -281,44 +273,54 @@ app.post('/api/rules/:id/toggle', (req, res) => {
   res.json({ success: true, enabled: rule.enabled });
 });
 
-app.delete('/api/rules/:id', (req, res) => {
-  let rules = readData('rules.json', []);
+app.delete('/api/rules/:id', (req: Request, res: Response) => {
+  let rules = readData<RuleItem[]>('rules.json', []);
   rules = rules.filter(r => r.id !== req.params.id);
   writeData('rules.json', rules);
   res.json({ success: true });
 });
 
 // -------------------------------------------------------------
-// Universal API Proxy (With Requestly Interceptor Rules Applied!)
+// Universal API Proxy
 // -------------------------------------------------------------
-app.post('/api/proxy', async (req, res) => {
-  let { url, method = 'GET', headers = {}, body, bodyType } = req.body;
+interface ProxyRequestBody {
+  url?: string;
+  method?: string;
+  headers?: Record<string, string>;
+  body?: string | Record<string, unknown>;
+  bodyType?: string;
+}
+
+app.post('/api/proxy', async (req: Request, res: Response) => {
+  const reqData: ProxyRequestBody = req.body;
+  let url = reqData.url;
+  const method = reqData.method || 'GET';
+  const headers: Record<string, string> = reqData.headers || {};
+  const body = reqData.body;
+  const bodyType = reqData.bodyType;
 
   if (!url) {
     return res.status(400).json({ success: false, error: 'URL is required' });
   }
 
   const startTime = Date.now();
-  const rules = readData('rules.json', []);
+  const rules = readData<RuleItem[]>('rules.json', []);
 
-  // Apply Active Requestly Rules
   for (const rule of rules) {
     if (!rule.enabled || !rule.sourceUrlPattern) continue;
 
-    // Wildcard match pattern
     const patternRegex = new RegExp('^' + rule.sourceUrlPattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$', 'i');
     if (patternRegex.test(url)) {
-      // Rule 1: Delay
-      if (rule.ruleType === 'delay' && rule.delayMs > 0) {
-        await new Promise(r => setTimeout(r, rule.delayMs));
+      if (rule.ruleType === 'delay' && rule.delayMs && rule.delayMs > 0) {
+        const { promise, resolve } = Promise.withResolvers<void>();
+        setTimeout(resolve, rule.delayMs);
+        await promise;
       }
 
-      // Rule 2: Redirect
       if (rule.ruleType === 'redirect' && rule.targetUrl) {
         url = rule.targetUrl;
       }
 
-      // Rule 3: Modify Headers
       if (rule.ruleType === 'modify_headers' && Array.isArray(rule.headersToModify)) {
         rule.headersToModify.forEach(h => {
           if (h.action === 'remove') delete headers[h.key];
@@ -326,15 +328,14 @@ app.post('/api/proxy', async (req, res) => {
         });
       }
 
-      // Rule 4: Modify Response (Mock Intercept)
       if (rule.ruleType === 'modify_response') {
         const duration = Date.now() - startTime;
-        let parsedData = rule.responseBody;
+        let parsedData: unknown = rule.responseBody;
         let isJson = false;
         try {
-          parsedData = JSON.parse(rule.responseBody);
+          parsedData = JSON.parse(rule.responseBody || '{}');
           isJson = true;
-        } catch (e) {}
+        } catch {}
         return res.json({
           success: true,
           status: rule.statusCode || 200,
@@ -350,24 +351,26 @@ app.post('/api/proxy', async (req, res) => {
   }
 
   try {
-    const fetchOptions = {
+    const fetchOptions: RequestInit = {
       method: method.toUpperCase(),
       headers: { ...headers },
       redirect: 'follow'
     };
 
-    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(fetchOptions.method)) {
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(fetchOptions.method || '')) {
       if (bodyType === 'json' && body) {
         fetchOptions.body = typeof body === 'string' ? body : JSON.stringify(body);
-        if (!fetchOptions.headers['Content-Type'] && !fetchOptions.headers['content-type']) {
-          fetchOptions.headers['Content-Type'] = 'application/json';
+        const headerRec = fetchOptions.headers as Record<string, string>;
+        if (!headerRec['Content-Type'] && !headerRec['content-type']) {
+          headerRec['Content-Type'] = 'application/json';
         }
       } else if (bodyType === 'urlencoded' && body) {
-        fetchOptions.body = typeof body === 'string' ? body : new URLSearchParams(body).toString();
-        if (!fetchOptions.headers['Content-Type'] && !fetchOptions.headers['content-type']) {
-          fetchOptions.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+        fetchOptions.body = typeof body === 'string' ? body : new URLSearchParams(body as Record<string, string>).toString();
+        const headerRec = fetchOptions.headers as Record<string, string>;
+        if (!headerRec['Content-Type'] && !headerRec['content-type']) {
+          headerRec['Content-Type'] = 'application/x-www-form-urlencoded';
         }
-      } else if (body) {
+      } else if (body && typeof body === 'string') {
         fetchOptions.body = body;
       }
     }
@@ -375,20 +378,20 @@ app.post('/api/proxy', async (req, res) => {
     const response = await fetch(url, fetchOptions);
     const duration = Date.now() - startTime;
 
-    const responseHeaders = {};
+    const responseHeaders: Record<string, string> = {};
     response.headers.forEach((val, key) => {
       responseHeaders[key] = val;
     });
 
     const contentType = response.headers.get('content-type') || '';
-    let responseData = '';
+    let responseData: unknown = '';
     let isJson = false;
 
     if (contentType.includes('application/json')) {
       try {
         responseData = await response.json();
         isJson = true;
-      } catch (e) {
+      } catch {
         responseData = await response.text();
       }
     } else {
@@ -408,30 +411,38 @@ app.post('/api/proxy', async (req, res) => {
       duration
     });
 
-  } catch (err) {
+  } catch (err: unknown) {
     const duration = Date.now() - startTime;
+    const errorMsg = err instanceof Error ? err.message : String(err);
     res.status(502).json({
       success: false,
-      error: err.message,
+      error: errorMsg,
       duration
     });
   }
 });
 
 // -------------------------------------------------------------
-// Cloud Sync Integration (Hono + Neon Backend)
+// Cloud Sync Integration
 // -------------------------------------------------------------
-app.post('/api/cloud/sync/push', async (req, res) => {
-  const { cloudApiUrl, syncKey } = req.body;
+interface CloudSyncRequestPayload {
+  cloudApiUrl?: string;
+  syncKey?: string;
+}
+
+app.post('/api/cloud/sync/push', async (req: Request, res: Response) => {
+  const body: CloudSyncRequestPayload = req.body;
+  const cloudApiUrl = body.cloudApiUrl;
+  const syncKey = body.syncKey;
+
   if (!cloudApiUrl || !syncKey) {
     return res.status(400).json({ success: false, error: 'Cloud API URL and Sync Key are required' });
   }
 
-  const collections = readData('collections.json', []);
-  const environments = readData('environments.json', []);
+  const collections = readData<CollectionItem[]>('collections.json', []);
+  const environments = readData<EnvironmentItem[]>('environments.json', []);
 
-  // Flatten items for relational database schema
-  const items = [];
+  const items: unknown[] = [];
   collections.forEach(col => {
     if (Array.isArray(col.items)) {
       col.items.forEach(it => {
@@ -455,19 +466,29 @@ app.post('/api/cloud/sync/push', async (req, res) => {
       })
     });
 
-    const data = await resp.json();
+    const data = await resp.json() as { success?: boolean; error?: string };
     if (!resp.ok || !data.success) {
       return res.status(resp.status).json({ success: false, error: data.error || 'Cloud sync failed' });
     }
 
     res.json({ success: true, message: 'LuluaX-Request data saved to Neon Cloud!', timestamp: Date.now() });
-  } catch (err) {
-    res.status(500).json({ success: false, error: 'Cloud push network error: ' + err.message });
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ success: false, error: 'Cloud push network error: ' + errorMsg });
   }
 });
 
-app.post('/api/cloud/sync/pull', async (req, res) => {
-  const { cloudApiUrl, syncKey } = req.body;
+interface CloudPullData {
+  collections?: CollectionItem[];
+  items?: Array<{ id: string; name: string; collectionId?: string; method: string; url: string }>;
+  environments?: EnvironmentItem[];
+}
+
+app.post('/api/cloud/sync/pull', async (req: Request, res: Response) => {
+  const body: CloudSyncRequestPayload = req.body;
+  const cloudApiUrl = body.cloudApiUrl;
+  const syncKey = body.syncKey;
+
   if (!cloudApiUrl || !syncKey) {
     return res.status(400).json({ success: false, error: 'Cloud API URL and Sync Key are required' });
   }
@@ -482,41 +503,37 @@ app.post('/api/cloud/sync/pull', async (req, res) => {
       }
     });
 
-    const data = await resp.json();
+    const data = await resp.json() as { success?: boolean; error?: string; data?: CloudPullData };
     if (!resp.ok || !data.success) {
       return res.status(resp.status).json({ success: false, error: data.error || 'Cloud pull failed' });
     }
 
     if (data.data) {
       const { collections = [], items = [], environments = [] } = data.data;
-
-      // Group items back into collections
-      const colMap = new Map();
+      const colMap = new Map<string, CollectionItem>();
       collections.forEach(c => colMap.set(c.id, { ...c, items: [] }));
 
       items.forEach(it => {
         if (it.collectionId && colMap.has(it.collectionId)) {
-          colMap.get(it.collectionId).items.push(it);
+          colMap.get(it.collectionId)?.items.push(it as unknown as CollectionItem['items'][0]);
         } else {
-          // If no collection, put in a general collection
           let unassigned = colMap.get('unassigned');
           if (!unassigned) {
             unassigned = { id: 'unassigned', name: 'General Requests', items: [] };
             colMap.set('unassigned', unassigned);
           }
-          unassigned.items.push(it);
+          unassigned.items.push(it as unknown as CollectionItem['items'][0]);
         }
       });
 
       writeData('collections.json', Array.from(colMap.values()));
-      if (environments.length > 0) {
-        writeData('environments.json', environments);
-      }
+      if (environments.length > 0) writeData('environments.json', environments);
     }
 
     res.json({ success: true, message: 'Pulled from Neon Cloud database successfully!', timestamp: Date.now() });
-  } catch (err) {
-    res.status(500).json({ success: false, error: 'Cloud pull network error: ' + err.message });
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ success: false, error: 'Cloud pull network error: ' + errorMsg });
   }
 });
 

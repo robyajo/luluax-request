@@ -31,10 +31,79 @@ class LuluaXRequestApp {
     await this.loadHistory();
     await this.loadRules();
     await this.loadMocks();
+    this.setupAutoUpdater();
+
     if (this.collections.length > 0 && this.collections[0].items.length > 0) {
       this.openRequestInTab(this.collections[0].items[0]);
     } else {
       this.createNewTab();
+    }
+  }
+
+  setupAutoUpdater() {
+    if (!window.electronAPI) return;
+
+    window.electronAPI.onUpdateAvailable((info) => {
+      const banner = document.getElementById('update-banner');
+      const msg = document.getElementById('update-banner-msg');
+      banner.style.display = 'flex';
+      msg.innerHTML = `🚀 Pembaruan Tersedia: <strong>v${this.escapeHtml(info.version)}</strong>!`;
+      this.pendingUpdateInfo = info;
+    });
+
+    window.electronAPI.onUpdateNotAvailable(() => {
+      if (this.isManualUpdateCheck) {
+        alert('LuluaX-Request Anda sudah menggunakan versi terbaru!');
+        this.isManualUpdateCheck = false;
+      }
+    });
+
+    window.electronAPI.onDownloadProgress((progress) => {
+      const bar = document.getElementById('update-progress-bar');
+      const fill = document.getElementById('update-progress-fill');
+      const msg = document.getElementById('update-banner-msg');
+      bar.style.display = 'block';
+      fill.style.width = `${progress.percent}%`;
+      msg.innerHTML = `Mengunduh: <strong>${progress.percent}%</strong> (${this.formatBytes(progress.bytesPerSecond || 0)}/s)...`;
+    });
+
+    window.electronAPI.onUpdateDownloaded((info) => {
+      document.getElementById('update-banner').style.display = 'none';
+      document.getElementById('update-downloaded-version').textContent = `v${info.version}`;
+      document.getElementById('update-release-notes').textContent = info.releaseNotes || 'Pembaruan stabilitas dan peningkatan performa terbaru.';
+      document.getElementById('modal-update-notes').classList.add('active');
+    });
+
+    window.electronAPI.onUpdateError((errMsg) => {
+      console.warn('Update check error:', errMsg);
+      if (this.isManualUpdateCheck) {
+        alert('Pemeriksaan pembaruan: ' + errMsg);
+        this.isManualUpdateCheck = false;
+      }
+    });
+  }
+
+  async triggerDownloadUpdate() {
+    const btn = document.getElementById('btn-download-update');
+    btn.disabled = true;
+    btn.textContent = 'Memulai Download...';
+    if (window.electronAPI) {
+      await window.electronAPI.downloadUpdate();
+    }
+  }
+
+  triggerRestartInstall() {
+    if (window.electronAPI) {
+      window.electronAPI.quitAndInstall();
+    }
+  }
+
+  async manualCheckUpdate() {
+    this.isManualUpdateCheck = true;
+    if (window.electronAPI) {
+      await window.electronAPI.checkForUpdate();
+    } else {
+      alert('Pemeriksaan update otomatis hanya berjalan pada aplikasi desktop Electron terpasang.');
     }
   }
 
@@ -164,7 +233,7 @@ class LuluaXRequestApp {
   renderUserProfile() {
     if (!this.currentUser) return;
     const card = document.getElementById('user-profile-card');
-    card.style.display = 'flex';
+    if (card) card.style.display = 'flex';
     document.getElementById('user-display-name').textContent = this.currentUser.name || this.currentUser.email.split('@')[0];
     document.getElementById('user-display-email').textContent = this.currentUser.email;
     const initials = (this.currentUser.name || this.currentUser.email).substring(0, 1).toUpperCase();
@@ -175,7 +244,9 @@ class LuluaXRequestApp {
     if (!confirm('Apakah Anda yakin ingin keluar / logout?')) return;
     localStorage.removeItem('luluax_req_auth_token');
     this.currentUser = null;
-    document.getElementById('user-profile-card').style.display = 'none';
+    document.getElementById('user-display-name').textContent = 'Belum Masuk';
+    document.getElementById('user-display-email').textContent = 'Klik untuk login';
+    document.getElementById('user-avatar-initials').textContent = '?';
     document.getElementById('auth-overlay').style.display = 'flex';
     this.switchAuthMode('login');
   }

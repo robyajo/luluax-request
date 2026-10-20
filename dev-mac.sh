@@ -30,17 +30,18 @@ if ! command -v node &> /dev/null; then
     exit 1
 fi
 
-echo -e "${GREEN}✓ Node.js version: $(node -v)${NC}"
-
 if [ ! -d "node_modules" ]; then
     echo -e "${YELLOW}Installing dependencies...${NC}"
     npm install
 fi
 
+echo -e "${CYAN}Compiling TypeScript source (src -> dist-electron)...${NC}"
+npx tsc
+
 PORT=${PORT:-3990}
 
 echo -e "${CYAN}[1/2] Starting local proxy server on port ${PORT}...${NC}"
-node server.js &
+node dist-electron/server.js &
 SERVER_PID=$!
 
 trap "echo -e '\n${YELLOW}Stopping LuluaX-Request server (PID: $SERVER_PID)...${NC}'; kill $SERVER_PID 2>/dev/null; exit 0" SIGINT SIGTERM EXIT
@@ -49,9 +50,9 @@ sleep 2
 
 echo -e "${CYAN}[2/2] Opening application window...${NC}"
 
-if command -v npx &> /dev/null && [ -f "electron-main.js" ] && [ -d "node_modules/electron" ]; then
+if [ -f "dist-electron/main.js" ] && [ -d "node_modules/electron" ]; then
     echo -e "${GREEN}✓ Launching via Electron desktop window...${NC}"
-    npx electron electron-main.js || true
+    npx electron dist-electron/main.js || true
 elif [ -d "/Applications/Google Chrome.app" ]; then
     open -na "Google Chrome" --args --app=http://127.0.0.1:${PORT} --window-size=1280,840
 elif [ -d "/Applications/Microsoft Edge.app" ]; then
@@ -61,6 +62,4 @@ else
 fi
 
 echo -e "\n${GREEN}>> LuluaX-Request running at: http://127.0.0.1:${PORT}${NC}"
-echo -e "${YELLOW}>> Press Ctrl+C in this terminal to stop the server.${NC}\n"
-
 wait $SERVER_PID

@@ -10,6 +10,23 @@
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="theme-dark">
+  <!-- TOP AUTO-UPDATE BANNER -->
+  <div class="update-banner" id="update-banner" style="display:none">
+    <div class="update-banner-content">
+      <span class="update-pulse"></span>
+      <span class="update-msg" id="update-banner-msg">🚀 Pembaruan Tersedia!</span>
+      <div class="update-progress-bar" id="update-progress-bar" style="display:none">
+        <div class="update-progress-fill" id="update-progress-fill" style="width: 0%"></div>
+      </div>
+    </div>
+    <div class="update-banner-actions">
+      <button type="button" class="btn btn-sm btn-primary" id="btn-download-update" onclick="app.triggerDownloadUpdate()">
+        Download Pembaruan
+      </button>
+      <button type="button" class="btn-banner-close" onclick="document.getElementById('update-banner').style.display='none'">&times;</button>
+    </div>
+  </div>
+
   <div class="app-layout">
     <!-- Left Navigation Sidebar -->
     <aside class="sidebar">
@@ -94,13 +111,20 @@
 
       <!-- Sidebar Footer (Cloud & Status) -->
       <div class="sidebar-footer">
-        <div class="user-profile-card" id="user-profile-card" style="display:none">
-          <div class="user-avatar" id="user-avatar-initials">R</div>
+        <div class="user-profile-card" id="user-profile-card">
+          <div class="user-avatar" id="user-avatar-initials">?</div>
           <div class="user-info">
-            <span class="user-name" id="user-display-name">Roby</span>
-            <span class="user-email" id="user-display-email">robyfull.dev@gmail.com</span>
+            <span class="user-name" id="user-display-name">Belum Masuk</span>
+            <span class="user-email" id="user-display-email">Klik untuk login</span>
           </div>
-          <button class="btn-logout" id="btn-logout" title="Keluar / Logout" onclick="app.logout()">&times;</button>
+          <button type="button" class="btn-logout-pill" id="btn-logout" title="Keluar / Logout" onclick="app.logout()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <span>Logout</span>
+          </button>
         </div>
         <div class="cloud-indicator" id="sidebar-cloud-badge">
           <div class="cloud-dot"></div>
@@ -141,6 +165,18 @@
               <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path>
             </svg>
             <span>Cloud Sync</span>
+          </button>
+          <button class="btn btn-secondary btn-sm" id="btn-check-update" onclick="app.manualCheckUpdate()" title="Periksa Pembaruan GitHub">
+            🔄 Update
+          </button>
+          <!-- Top Nav Logout Button -->
+          <button class="btn btn-secondary btn-sm" id="btn-top-logout" style="color:var(--danger); border-color:var(--danger)" onclick="app.logout()" title="Keluar dari Akun">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <span>Logout</span>
           </button>
         </div>
       </header>
@@ -501,8 +537,40 @@
       </form>
     </div>
   </div>
+  <!-- MODAL: RELEASE NOTES & RESTART INSTALL -->
+  <div class="modal-backdrop" id="modal-update-notes">
+    <div class="modal-dialog" style="max-width: 520px">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:8px">
+          <span style="font-size:20px">🎉</span>
+          <h3>Pembaruan Berhasil Diunduh!</h3>
+        </div>
+        <button class="modal-close" onclick="app.closeModal('modal-update-notes')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13px; color:var(--text-dim); margin-bottom:12px">
+          Versi <strong id="update-downloaded-version" style="color:var(--cyan)">v1.0.1</strong> siap dipasang ke sistem Anda.
+        </p>
+        <div class="update-notes-box">
+          <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px; display:block">
+            Apa Saja yang Baru (Release Notes):
+          </label>
+          <div class="update-notes-content" id="update-release-notes">
+            Memuat catatan pembaruan...
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content:space-between">
+        <button type="button" class="btn btn-text" onclick="app.closeModal('modal-update-notes')">Nanti Saja (Saat Keluar)</button>
+        <button type="button" class="btn btn-primary" id="btn-restart-install" onclick="app.triggerRestartInstall()">
+          Restart & Pasang Sekarang
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- FULLSCREEN AUTH OVERLAY (LOGIN & REGISTER GUARD) -->
-  <div class="auth-overlay" id="auth-overlay">
+  <div class="auth-overlay" id="auth-overlay" style="display: flex;">
     <div class="auth-card">
       <div class="auth-brand">
         <div class="brand-icon">
