@@ -1,0 +1,32 @@
+{
+  "date": "2026-10-21",
+  "type": "update",
+  "project": {
+    "name": "LuluaX-Request"
+  },
+  "title": {
+    "id": "Pembaruan Versi v1.0.2 — Perbaikan Layar Antarmuka dan Auto-Update",
+    "en": "Version v1.0.2 Update — UI Rendering Fixes and Auto-Update Integration"
+  },
+  "body": {
+    "id": "Rilis v1.0.2 menyelesaikan kendala layar kosong pada startup, menambahkan fungsi sanitasi escapeJs, integrasi otomatisasi pembaruan GitHub, dan peningkatan sinkronisasi database Neon.",
+    "en": "Release v1.0.2 resolves the blank screen issue on startup, adds escapeJs sanitization, integrates GitHub automated updates, and improves Neon database synchronization."
+  },
+  "items": [
+    {
+      "type": "fix",
+      "id": "Perbaikan Layar Kosong: Memulai server proxy lokal secara otomatis pada proses utama Electron.",
+      "en": "Blank Screen Fix: Local proxy backend server is now automatically spawned in the Electron main process."
+    },
+    {
+      "type": "fix",
+      "id": "Penambahan Fungsi escapeJs: Menghindari pengecualian JavaScript saat merender daftar endpoint mock.",
+      "en": "escapeJs Utility Added: Prevents JavaScript runtime exceptions when rendering mock endpoints."
+    },
+    {
+      "type": "update",
+      "id": "Dukungan Auto-Updater: Mengunduh dan memasang pembaruan rilis langsung dari dalam aplikasi.",
+      "en": "Auto-Updater Support: Downloads and installs new releases directly from within the application."
+    }
+  ]
+}
