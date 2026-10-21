@@ -18,7 +18,7 @@ Dokumen ini memuat kontrak teknis wajib bagi seluruh agen AI yang bekerja di eko
    - Berkas ini memuat seluruh status workspace pengguna: koleksi, request, environment, rules, mocks, dan pengaturan personal.
 
 2. **Multi-Device Parity (Cloud Synchronization)**:
-   - Setiap kali pengguna melakukan perubahan, perubahan tersebut disimpan secara lokal dan disinkronkan secara asinkron (debounced) ke backend database PostgreSQL Neon di `https://www.luluax-service.duckdns.org`.
+   - Setiap kali pengguna melakukan perubahan, perubahan tersebut disimpan secara lokal dan disinkronkan secara asinkron (debounced) ke backend database PostgreSQL Neon di `https://www.er-service.duckdns.org`.
    - Saat pengguna login di perangkat baru (misal laptop lain atau komputer kantor), aplikasi otomatis memanggil `GET /api/request/registry` atau `/api/cloud/sync/pull` untuk mengunduh snapshot akun tersebut sehingga seluruh request dan koleksi tampil 100% identik.
 
 ---

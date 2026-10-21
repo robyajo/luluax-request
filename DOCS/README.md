@@ -18,4 +18,4 @@ Dokumentasi teknis internal aplikasi **LuluaX-Request** (API Client & HTTP Inter
 
 - **Review saat Development (Portable)**: Jalankan `dev-portable.bat` (Windows) atau `./dev-mac.sh` (macOS).
 - **Rilis Installer Resmi**: Jalankan `build-installer.bat` (Windows Setup NSIS) atau `./build-mac.sh` (macOS DMG).
-- **Konfigurasi Cloud**: Cek file `.env` untuk endpoint backend (`https://www.luluax-service.duckdns.org`).
+- **Konfigurasi Cloud**: Cek file `.env` untuk endpoint backend (`https://www.er-service.duckdns.org`).

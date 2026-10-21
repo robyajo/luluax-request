@@ -229,7 +229,7 @@ app.delete('/api/history', (_req, res) => {
     res.json({ success: true });
 });
 app.get('/api/settings', (_req, res) => {
-    const defaultUrl = process.env.CLOUD_API_URL || 'https://www.luluax-service.duckdns.org';
+    const defaultUrl = process.env.CLOUD_API_URL || 'https://www.er-service.duckdns.org';
     const defaultKey = process.env.CLOUD_SYNC_KEY || '';
     const settings = readData('settings.json', {
         cloudApiUrl: defaultUrl,

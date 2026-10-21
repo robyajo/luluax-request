@@ -49,7 +49,7 @@ Setiap modifikasi kode pada `LuluaX-Request` harus mematuhi invarian berikut:
 - Seluruh file shell script (`run-macos.sh`, `dev-mac.sh`, `build-mac.sh`) **WAJIB** menggunakan line-ending **`LF`** (bukan `CRLF`) agar dapat dieksekusi tanpa error di macOS/Linux.
 
 ### G. Integrasi Cloud Sync & Keamanan Kunci
-- Sinkronisasi cloud terhubung ke `https://www.luluax-service.duckdns.org` (Hono + Drizzle ORM + Neon PostgreSQL).
+- Sinkronisasi cloud terhubung ke `https://www.er-service.duckdns.org` (Hono + Drizzle ORM + Neon PostgreSQL).
 - Gunakan endpoint modular backend: `/api/request` untuk koleksi, item, lingkungan, dan riwayat; serta `/api/sync` untuk full snapshot.
 - Kredensial dan token disimpan di `localStorage` frontend (`luluax_req_auth_token`, `luluax_sync_key`).
 - **DILARANG KERAS** melakukan commit file kredensial lokal seperti `.env`, `.env.local`, atau `.ACTIVITY_PROJECT_KEYS` ke repositori Git.

@@ -1,6 +1,6 @@
 ---
 name: luluax-request
-description: "Arsitektur dan panduan pengembangan aplikasi LuluaX-Request: API Client & HTTP Interceptor multi-platform (Windows x64/ARM64 dan macOS Apple Silicon M-Series). Meliputi Universal CORS Proxy di port 3990, HTTP Interceptor Rules (Redirect, Modify Headers, Modify Response, Delay/Throttling) khas Requestly, Mock API Server lokal (/mock/*), Environment Variables ({{baseUrl}}), Code Snippet Generator (cURL, fetch, axios, requests), dan Cloud Sync ke Hono + Neon PostgreSQL (https://www.luluax-service.duckdns.org). Gunakan skill ini setiap kali mengembangkan, memperbaiki bug, menambah fitur, atau memaketkan aplikasi LuluaX-Request."
+description: "Arsitektur dan panduan pengembangan aplikasi LuluaX-Request: API Client & HTTP Interceptor multi-platform (Windows x64/ARM64 dan macOS Apple Silicon M-Series). Meliputi Universal CORS Proxy di port 3990, HTTP Interceptor Rules (Redirect, Modify Headers, Modify Response, Delay/Throttling) khas Requestly, Mock API Server lokal (/mock/*), Environment Variables ({{baseUrl}}), Code Snippet Generator (cURL, fetch, axios, requests), dan Cloud Sync ke Hono + Neon PostgreSQL (https://www.er-service.duckdns.org). Gunakan skill ini setiap kali mengembangkan, memperbaiki bug, menambah fitur, atau memaketkan aplikasi LuluaX-Request."
 ---
 
 # LuluaX-Request — Panduan Arsitektur & Pengembangan AI Agent
@@ -20,7 +20,7 @@ Skill ini memuat seluruh panduan arsitektur, struktur kode, alur kerja, konvensi
   - Universal CORS Proxy (`POST /api/proxy`): Menjalankan pemanggilan HTTP apapun (GET, POST, PUT, DELETE, dll.) dari server lokal Node.js sehingga browser bebas dari blokir CORS!
   - Penyimpanan Data: `AppData/Roaming/LuluaX-Request` di Windows atau `~/Library/Application Support/LuluaX-Request` di macOS (menghindari error `ENOTDIR` saat dibundel ASAR).
 - **Cloud Backend**:
-  - Live Domain: `https://www.luluax-service.duckdns.org` (Hono Serverless + Drizzle ORM + Neon PostgreSQL).
+  - Live Domain: `https://www.er-service.duckdns.org` (Hono Serverless + Drizzle ORM + Neon PostgreSQL).
   - Skema tabel di Neon: `req_collections`, `req_items`, `req_environments`, `req_history`, `req_mocks`, `req_rules`.
 
 ---
@@ -56,7 +56,7 @@ Proxy `/api/proxy` di `server.js` otomatis memeriksa daftar aturan aktif di `dat
 - Code Generator: Ekspor instan ke format **cURL**, **JavaScript (fetch)**, **Node.js (axios)**, dan **Python (requests)**.
 
 ### D. Autentikasi Pengguna & Guard Screen
-- Sebelum aplikasi dapat digunakan, layar terkunci oleh `#auth-overlay` yang mewajibkan login/register ke backend cloud (`https://www.luluax-service.duckdns.org`).
+- Sebelum aplikasi dapat digunakan, layar terkunci oleh `#auth-overlay` yang mewajibkan login/register ke backend cloud (`https://www.er-service.duckdns.org`).
 - Akun bawaan (Seeded di Neon Postgres):
   - **Developer**: `robyfull.dev@gmail.com` | `Password@123`
   - **Admin**: `admin@luluax.com` | `Password@123`

@@ -1,5 +1,5 @@
 {
-  "cloudApiUrl": "https://www.luluax-service.duckdns.org",
+  "cloudApiUrl": "https://www.er-service.duckdns.org",
   "cloudSyncKey": "robyfull.dev@gmail.com",
   "timeoutMs": 30000,
   "followRedirects": true,

@@ -4,7 +4,7 @@
     "name": "Production Cloud (LuluaX)",
     "isDefault": true,
     "variables": [
-      { "key": "backendUrl", "value": "https://www.luluax-service.duckdns.org", "enabled": true },
+      { "key": "backendUrl", "value": "https://www.er-service.duckdns.org", "enabled": true },
       { "key": "apiKey", "value": "my-secret-key-2026", "enabled": true }
     ]
   },

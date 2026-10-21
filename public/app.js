@@ -164,7 +164,7 @@ class LuluaXRequestApp {
   }
 
   async checkServerAndAuth() {
-    const serverUrl = this.settings.cloudApiUrl || 'https://www.luluax-service.duckdns.org';
+    const serverUrl = this.settings.cloudApiUrl || 'https://www.er-service.duckdns.org';
     const statusPill = document.getElementById('auth-server-status');
     const statusLabel = document.getElementById('auth-server-label');
 
@@ -229,7 +229,7 @@ class LuluaXRequestApp {
   }
 
   async handleAuthSubmit() {
-    const serverUrl = this.settings.cloudApiUrl || 'https://www.luluax-service.duckdns.org';
+    const serverUrl = this.settings.cloudApiUrl || 'https://www.er-service.duckdns.org';
     const email = document.getElementById('auth-email').value.trim();
     const password = document.getElementById('auth-password').value;
     const name = document.getElementById('auth-name').value.trim();
@@ -298,7 +298,7 @@ class LuluaXRequestApp {
 
   async logout() {
     if (!confirm('Apakah Anda yakin ingin keluar / logout?')) return;
-    const serverUrl = this.settings.cloudApiUrl || 'https://www.luluax-service.duckdns.org';
+    const serverUrl = this.settings.cloudApiUrl || 'https://www.er-service.duckdns.org';
     const savedToken = localStorage.getItem('luluax_req_auth_token');
 
     // Panggil API logout backend untuk membersihkan sesi di server
@@ -346,7 +346,7 @@ class LuluaXRequestApp {
   }
 
   async checkServerConnectivity(isBackground = false) {
-    const serverUrl = this.settings.cloudApiUrl || 'https://www.luluax-service.duckdns.org';
+    const serverUrl = this.settings.cloudApiUrl || 'https://www.er-service.duckdns.org';
     try {
       const res = await fetch(`${serverUrl}/api/health`, { method: 'GET', signal: AbortSignal.timeout(5000) });
       const data = await res.json();
@@ -381,7 +381,7 @@ class LuluaXRequestApp {
     document.getElementById('global-error-desc').textContent = desc;
     document.getElementById('global-error-status-badge').textContent = statusBadge || 'ERROR';
 
-    const fullDetail = details || `Timestamp: ${new Date().toISOString()}\nError: ${desc}\nTarget Server: ${this.settings.cloudApiUrl || 'https://www.luluax-service.duckdns.org'}`;
+    const fullDetail = details || `Timestamp: ${new Date().toISOString()}\nError: ${desc}\nTarget Server: ${this.settings.cloudApiUrl || 'https://www.er-service.duckdns.org'}`;
     document.getElementById('global-error-content').textContent = fullDetail;
     this.lastGlobalErrorText = `[LuluaX-Request Error Report]\nTitle: ${title}\nStatus: ${statusBadge}\nDescription: ${desc}\n\n${fullDetail}`;
 
