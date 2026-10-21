@@ -83,3 +83,14 @@ export interface SettingsData {
   followRedirects?: boolean;
   verifySsl?: boolean;
 }
+export interface RequestAccountRegistry {
+  accountId: string;
+  email?: string;
+  version: number;
+  updatedAt: number;
+  collections: CollectionItem[];
+  environments: EnvironmentItem[];
+  rules: RuleItem[];
+  mocks: MockItem[];
+  settings: SettingsData;
+}

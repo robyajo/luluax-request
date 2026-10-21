@@ -1,0 +1,32 @@
+{
+  "date": "2026-10-22",
+  "type": "update",
+  "project": {
+    "name": "LuluaX Request"
+  },
+  "title": {
+    "id": "Rilis v1.0.3 — Arsitektur Registry Akun, Indikator Versi Terpasang, dan Sinkronisasi Multi-Device",
+    "en": "Release v1.0.3 — Account Registry Architecture, Installed Version Display, and Multi-Device Sync"
+  },
+  "body": {
+    "id": "Pembaruan v1.0.3 menghadirkan arsitektur penyimpanan terisolasi per akun pengguna, sinkronisasi cloud snapshot utuh ke database, penampil versi terpasang dinamis di bilah atas, dan lencana animasi notifikasi pembaruan di pojok kanan atas.",
+    "en": "Release v1.0.3 introduces isolated per-account registry architecture, full database cloud snapshot synchronization, dynamic installed version display on navigation bars, and top-right animated update badges."
+  },
+  "items": [
+    {
+      "type": "feature",
+      "id": "Penyimpanan Registry Per Akun: Seluruh koleksi, request, environment, rules, dan mock disimpan dalam snapshot terisolasi per akun di disk lokal.",
+      "en": "Per-Account Scoped Registry: All collections, requests, environments, rules, and mocks are preserved in an isolated account-scoped registry."
+    },
+    {
+      "type": "feature",
+      "id": "Sinkronisasi Multi-Device: Sinkronisasi database cloud memastikan saat login di komputer lain seluruh workspace dan request tampil identik.",
+      "en": "Multi-Device Synchronization: Cloud database synchronization guarantees workspace and requests appear identical when logging in on other devices."
+    },
+    {
+      "type": "update",
+      "id": "Penampil Versi Terpasang & Lencana Pembaruan: Nomor versi rilis kini ditampilkan jelas di navigasi atas dengan lencana animasi saat rilis baru tersedia di GitHub.",
+      "en": "Installed Version Display & Update Badge: The release version is now clearly shown on the top navigation bar with an animated badge when a new update is available on GitHub."
+    }
+  ]
+}

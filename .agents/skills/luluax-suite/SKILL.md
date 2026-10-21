@@ -50,7 +50,8 @@ Ekosistem LuluaX terdiri dari 3 aplikasi modular:
 
 ## 4. Lokasi File Binary Executable Windows
 
-- `luluax-term/dist/LuluaX-Term 1.0.0.exe` (Portable Single-file EXE ~103 MB)
+- `luluax-term/dist/LuluaX-Term Setup 1.0.3.exe` (Installer NSIS ~117 MB)
+- `luluax-term/dist/LuluaX-Term 1.0.3.exe` (Portable Single-file EXE ~117 MB)
 - `luluax-request/dist/LuluaX-Request 1.0.0.exe` (Portable Single-file EXE ~100 MB)
 
 ---
@@ -60,3 +61,6 @@ Ekosistem LuluaX terdiri dari 3 aplikasi modular:
 1. **Aturan ENOTDIR**: Jangan pernah menulis data ke `__dirname` di dalam paket Electron ASAR. Gunakan `getWritableDataDir(appName, defaultDataPath)` yang mengarah ke `%APPDATA%` (Windows) atau `~/Library/Application Support` (macOS).
 2. **Aturan Line-Endings**: Seluruh file `.sh` wajib disimpan dengan Unix `LF`.
 3. **Aturan TypeScript Backend**: Patuhi aturan `ts-no-any` (gunakan domain interfaces / `unknown` / `Context`) dan `ts-no-tiny-functions`.
+4. **Aturan CHANGELOG.md**: Setiap kali agen AI melakukan perubahan kode, perbaikan bug, atau penambahan fitur, AI WAJIB memperbarui berkas `CHANGELOG.md` di aplikasi masing-masing (`luluax-term/CHANGELOG.md`, `luluax-request/CHANGELOG.md`, atau `backend/CHANGELOG.md`) menggunakan format standar Keep a Changelog.
+5. **Aturan Per-Account Registry**: Setiap entitas baru atau pengaturan baru wajib disimpan terisolasi di `registry-<accountId>.json` lokal dan disinkronkan ke tabel database Neon PostgreSQL backend agar multi-device parity terjamin.
+6. **Aturan Wajib Activity-Sync**: Setiap kali menyelesaikan tugas atau perbaikan, agen AI wajib menjalankan sinkronisasi rilis dwibahasa ke API portfolio (`https://ajoroby.is-a.dev/api/activities`).

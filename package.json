@@ -1,6 +1,6 @@
 {
   "name": "luluax-request",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Modern API Client inspired by Requestly with Neon Cloud Sync for Windows & macOS",
   "main": "dist-electron/main.js",
   "scripts": {

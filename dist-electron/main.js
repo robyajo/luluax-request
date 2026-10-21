@@ -36,6 +36,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 const electron_updater_1 = require("electron-updater");
 const path = __importStar(require("path"));
+// IPC Handlers
+electron_1.ipcMain.handle('get-app-version', () => electron_1.app.getVersion());
+electron_1.ipcMain.handle('check-for-update', () => electron_updater_1.autoUpdater.checkForUpdates());
+electron_1.ipcMain.handle('download-update', () => electron_updater_1.autoUpdater.downloadUpdate());
+electron_1.ipcMain.handle('quit-and-install', () => electron_updater_1.autoUpdater.quitAndInstall(false, true));
 // Start the local proxy backend server in-process
 require("./server.js");
 const PORT = 3990;
@@ -86,57 +91,61 @@ function createWindow() {
 function setupAutoUpdater() {
     electron_updater_1.autoUpdater.on('checking-for-update', () => {
         console.log('[AutoUpdater] Memeriksa pembaruan LuluaX-Request di GitHub...');
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('checking-for-update');
+        }
     });
-    electron_updater_1.autoUpdater.on('update-available', async (info) => {
+    electron_updater_1.autoUpdater.on('update-available', (info) => {
         console.log(`[AutoUpdater] Versi baru ditemukan: v${info.version}`);
-        if (!mainWindow || mainWindow.isDestroyed())
-            return;
-        const dialogResult = await electron_1.dialog.showMessageBox(mainWindow, {
-            type: 'info',
-            buttons: ['Download Pembaruan Sekarang', 'Nanti Saja'],
-            defaultId: 0,
-            cancelId: 1,
-            title: 'Pembaruan Tersedia',
-            message: `Versi baru v${info.version} telah tersedia di GitHub!`,
-            detail: `Apakah Anda ingin mengunduh pembaruan ini sekarang?`
-        });
-        if (dialogResult.response === 0) {
-            electron_updater_1.autoUpdater.downloadUpdate().catch((err) => {
-                const message = err instanceof Error ? err.message : String(err);
-                console.error('[AutoUpdater] Gagal mengunduh pembaruan:', message);
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('update-available', {
+                version: info.version,
+                releaseDate: info.releaseDate,
+                releaseNotes: typeof info.releaseNotes === 'string'
+                    ? info.releaseNotes
+                    : (Array.isArray(info.releaseNotes)
+                        ? info.releaseNotes.map((n) => typeof n === 'string' ? n : (n.note || '')).join('\n')
+                        : 'Pembaruan stabilitas dan penambahan fitur terbaru.')
             });
         }
     });
     electron_updater_1.autoUpdater.on('update-not-available', (info) => {
         console.log(`[AutoUpdater] LuluaX-Request sudah versi terbaru (v${info.version}).`);
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('update-not-available', {
+                version: info.version
+            });
+        }
     });
     electron_updater_1.autoUpdater.on('download-progress', (progressObj) => {
         const percent = Math.round(progressObj.percent);
         console.log(`[AutoUpdater] Mengunduh: ${percent}%`);
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('download-progress', {
+                percent,
+                bytesPerSecond: progressObj.bytesPerSecond,
+                transferred: progressObj.transferred,
+                total: progressObj.total
+            });
+        }
     });
-    electron_updater_1.autoUpdater.on('update-downloaded', async (info) => {
-        if (!mainWindow || mainWindow.isDestroyed())
-            return;
-        const releaseNotesText = typeof info.releaseNotes === 'string'
-            ? info.releaseNotes
-            : (Array.isArray(info.releaseNotes)
-                ? info.releaseNotes.map((n) => typeof n === 'string' ? n : (n.note || '')).join('\n')
-                : 'Pembaruan stabilitas dan penambahan fitur terbaru.');
-        const dialogResult = await electron_1.dialog.showMessageBox(mainWindow, {
-            type: 'info',
-            buttons: ['Restart & Pasang Sekarang', 'Nanti Saja'],
-            defaultId: 0,
-            cancelId: 1,
-            title: 'Pembaruan Siap Dipasang',
-            message: `🎉 Pembaruan v${info.version} berhasil diunduh!`,
-            detail: `Apa saja yang baru di versi ini:\n\n${releaseNotesText}\n\nKlik "Restart & Pasang Sekarang" untuk menyelesaikan pembaruan.`
-        });
-        if (dialogResult.response === 0) {
-            electron_updater_1.autoUpdater.quitAndInstall(false, true);
+    electron_updater_1.autoUpdater.on('update-downloaded', (info) => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('update-downloaded', {
+                version: info.version,
+                releaseNotes: typeof info.releaseNotes === 'string'
+                    ? info.releaseNotes
+                    : (Array.isArray(info.releaseNotes)
+                        ? info.releaseNotes.map((n) => typeof n === 'string' ? n : (n.note || '')).join('\n')
+                        : 'Pembaruan stabilitas dan penambahan fitur terbaru.')
+            });
         }
     });
     electron_updater_1.autoUpdater.on('error', (err) => {
         console.error('[AutoUpdater] Error:', err.message);
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('update-error', err.message);
+        }
     });
 }
 electron_1.app.whenReady().then(() => {

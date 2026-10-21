@@ -39,7 +39,7 @@
           </div>
           <div class="brand-text">
             <span class="brand-title">LuluaX<span class="brand-cyan">Request</span></span>
-            <span class="brand-sub" id="sys-platform-badge">API Client • Desktop</span>
+            <span class="brand-sub" id="sys-platform-badge">v1.0.2 • Windows & macOS</span>
           </div>
         </div>
       </div>
@@ -158,6 +158,16 @@
               </svg>
             </button>
           </div>
+
+          <!-- Installed Version Pill & Update Badge -->
+          <div class="badge-installed-version" title="Versi LuluaX-Request yang Terpasang">
+            <span class="version-dot"></span>
+            <span class="display-installed-version" id="installed-version-val">v1.0.2</span>
+          </div>
+          <button type="button" class="btn-top-update-badge" id="btn-top-update-badge" style="display:none;" onclick="app.onUpdateBadgeClick()" title="Pembaruan Baru Tersedia!">
+            <span id="top-update-badge-icon">🚀</span>
+            <span id="top-update-badge-text">Update Tersedia</span>
+          </button>
 
           <!-- Cloud Sync Modal Button -->
           <button class="btn btn-secondary btn-sm" id="btn-open-cloud">

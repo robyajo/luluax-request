@@ -99,15 +99,97 @@ app.get('/api/system', (_req, res) => {
     else {
         platformLabel = `Linux (${arch})`;
     }
+    let appVersion = '1.0.2';
+    try {
+        const pkgPath = path_1.default.join(PROJECT_ROOT, 'package.json');
+        if (fs_1.default.existsSync(pkgPath)) {
+            const pkg = JSON.parse(fs_1.default.readFileSync(pkgPath, 'utf-8'));
+            if (pkg.version)
+                appVersion = pkg.version;
+        }
+    }
+    catch { }
     res.json({
         success: true,
         platform,
         arch,
         platformLabel,
+        appVersion,
         hostname: os_1.default.hostname(),
         uptime: os_1.default.uptime(),
         nodeVersion: process.version
     });
+});
+// -------------------------------------------------------------
+// Per-Account Registry Manager (registry-<accountId>.json)
+// -------------------------------------------------------------
+function getRegistryFilePath(accountId) {
+    const safeId = accountId.replace(/[^a-zA-Z0-9_-]/g, '_');
+    return path_1.default.join(DATA_DIR, `registry-${safeId}.json`);
+}
+function loadAccountRegistry(accountId) {
+    const regPath = getRegistryFilePath(accountId);
+    if (fs_1.default.existsSync(regPath)) {
+        try {
+            return JSON.parse(fs_1.default.readFileSync(regPath, 'utf-8'));
+        }
+        catch { }
+    }
+    return {
+        accountId,
+        version: 1,
+        updatedAt: Date.now(),
+        collections: readData('collections.json', []),
+        environments: readData('environments.json', []),
+        rules: readData('rules.json', []),
+        mocks: readData('mocks.json', []),
+        settings: readData('settings.json', {})
+    };
+}
+function saveAccountRegistry(registry) {
+    const regPath = getRegistryFilePath(registry.accountId);
+    try {
+        fs_1.default.writeFileSync(regPath, JSON.stringify(registry, null, 2), 'utf-8');
+    }
+    catch (err) {
+        console.error('Error saving request account registry:', err);
+    }
+}
+function syncActiveRegistry(accountId = 'default-user') {
+    const registry = {
+        accountId,
+        version: 1,
+        updatedAt: Date.now(),
+        collections: readData('collections.json', []),
+        environments: readData('environments.json', []),
+        rules: readData('rules.json', []),
+        mocks: readData('mocks.json', []),
+        settings: readData('settings.json', {})
+    };
+    saveAccountRegistry(registry);
+}
+app.get('/api/registry', (req, res) => {
+    const accountId = typeof req.query.accountId === 'string' ? req.query.accountId : 'default-user';
+    const registry = loadAccountRegistry(accountId);
+    res.json({ success: true, registry });
+});
+app.post('/api/registry/activate', (req, res) => {
+    const reqBody = req.body;
+    const accountId = (reqBody && typeof reqBody === 'object' && 'accountId' in reqBody && typeof reqBody.accountId === 'string')
+        ? reqBody.accountId
+        : 'default-user';
+    const registry = loadAccountRegistry(accountId);
+    if (Array.isArray(registry.collections))
+        writeData('collections.json', registry.collections);
+    if (Array.isArray(registry.environments))
+        writeData('environments.json', registry.environments);
+    if (Array.isArray(registry.rules))
+        writeData('rules.json', registry.rules);
+    if (Array.isArray(registry.mocks))
+        writeData('mocks.json', registry.mocks);
+    if (registry.settings && typeof registry.settings === 'object')
+        writeData('settings.json', registry.settings);
+    res.json({ success: true, message: `Active workspace switched to account ${accountId}`, registry });
 });
 // -------------------------------------------------------------
 // Local Data APIs
@@ -118,6 +200,7 @@ app.get('/api/collections', (_req, res) => {
 });
 app.post('/api/collections', (req, res) => {
     writeData('collections.json', req.body);
+    syncActiveRegistry();
     res.json({ success: true });
 });
 app.get('/api/environments', (_req, res) => {
@@ -126,6 +209,7 @@ app.get('/api/environments', (_req, res) => {
 });
 app.post('/api/environments', (req, res) => {
     writeData('environments.json', req.body);
+    syncActiveRegistry();
     res.json({ success: true });
 });
 app.get('/api/history', (_req, res) => {
@@ -162,6 +246,7 @@ app.post('/api/settings', (req, res) => {
     const cur = readData('settings.json', {});
     const updated = { ...cur, ...req.body };
     writeData('settings.json', updated);
+    syncActiveRegistry();
     res.json({ success: true, settings: updated });
 });
 // -------------------------------------------------------------
@@ -187,12 +272,14 @@ app.post('/api/mocks', (req, res) => {
     };
     mocks.push(newMock);
     writeData('mocks.json', mocks);
+    syncActiveRegistry();
     res.json({ success: true, mock: newMock });
 });
 app.delete('/api/mocks/:id', (req, res) => {
     let mocks = readData('mocks.json', []);
     mocks = mocks.filter(m => m.id !== req.params.id);
     writeData('mocks.json', mocks);
+    syncActiveRegistry();
     res.json({ success: true });
 });
 // Live Mock Endpoint Handler
@@ -240,6 +327,7 @@ app.post('/api/rules', (req, res) => {
     };
     rules.push(newRule);
     writeData('rules.json', rules);
+    syncActiveRegistry();
     res.json({ success: true, rule: newRule });
 });
 app.post('/api/rules/:id/toggle', (req, res) => {
@@ -249,12 +337,14 @@ app.post('/api/rules/:id/toggle', (req, res) => {
         return res.status(404).json({ success: false, error: 'Rule not found' });
     rule.enabled = !rule.enabled;
     writeData('rules.json', rules);
+    syncActiveRegistry();
     res.json({ success: true, enabled: rule.enabled });
 });
 app.delete('/api/rules/:id', (req, res) => {
     let rules = readData('rules.json', []);
     rules = rules.filter(r => r.id !== req.params.id);
     writeData('rules.json', rules);
+    syncActiveRegistry();
     res.json({ success: true });
 });
 app.post('/api/proxy', async (req, res) => {
@@ -462,6 +552,7 @@ app.post('/api/cloud/sync/pull', async (req, res) => {
             writeData('collections.json', Array.from(colMap.values()));
             if (environments.length > 0)
                 writeData('environments.json', environments);
+            syncActiveRegistry(syncKey);
         }
         res.json({ success: true, message: 'Pulled from Neon Cloud database successfully!', timestamp: Date.now() });
     }
