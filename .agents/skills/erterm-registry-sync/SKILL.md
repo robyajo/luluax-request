@@ -1,6 +1,6 @@
 ---
-name: luluax-registry-sync
-description: "Aturan arsitektur penyimpanan data per akun (registry-<accountId>.json), folder grouping dengan drag-and-drop, dan sinkronisasi multi-device ke cloud backend PostgreSQL. WAJIB dijalankan oleh AI setiap kali menambahkan fitur baru, entitas baru, atau konfigurasi baru di LuluaX Suite agar selalu memiliki skema penyimpanan lokal dan cloud yang tersinkronisasi."
+name: erterm-registry-sync
+description: "Aturan arsitektur penyimpanan data per akun (registry-<accountId>.json) dan sinkronisasi multi-device ke cloud backend PostgreSQL untuk ekosistem ErTerm & LuluaX."
 ---
 
 # LuluaX Registry & Cloud Sync Architecture
